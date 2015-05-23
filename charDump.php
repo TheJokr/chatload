@@ -24,7 +24,7 @@
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['name'])) {
   $names = explode(",", $_POST['name']);
   try {
-    $dbh = new PDO('mysql:unix_socket=MYSQL_SOCKET;dbname=chatloadDump;charset=utf8', 'chatloadDump', 'SQL_USER_PASSWORD');
+    $dbh = new PDO('mysql:host=localhost;dbname=chatloadDump;charset=utf8', 'chatloadDump', 'SQL_USER_PASSWORD');
   } catch (PDOException $e) {
     exit("Connection failed: ".$e->getMessage());
   }

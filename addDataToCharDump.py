@@ -35,7 +35,7 @@ def split_list(alist, wanted_parts=1):
 
 
 # Request characters (update existing (>1 month since last update) and new ones (no characterID specified))
-conn = MySQLdb.connect(host="localhost", unix_socket="MYSQL_SOCKET", user="chatloadDump", passwd="SQL_USER_PASSWORD", db="chatloadDump", charset="utf8")
+conn = MySQLdb.connect(host="localhost", user="chatloadDump", passwd="SQL_USER_PASSWORD", db="chatloadDump", charset="utf8")
 cur = conn.cursor()
 
 cur.execute("SELECT * FROM `characters` WHERE `lastModified` < DATE_SUB(CURDATE(), INTERVAL 1 MONTH) OR `characterID` IS NULL;")
@@ -52,7 +52,7 @@ for row in res:
     allData.append(list(row))
 
 # Divide output into lists of 200 chars (higher number seems to break some APIs)
-parts = split_list(allData, (len(allData)/200)+1)
+parts = split_list(allData, (len(allData)//200)+1)
 
 
 # Add all the API data
