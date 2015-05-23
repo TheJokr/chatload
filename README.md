@@ -12,29 +12,29 @@ No log data is uploaded, just the scraped character names.
 ## Building (Windows)
 ### Requirements
 - [C++ REST SDK (Casablanca)](http://casablanca.codeplex.com/)
-- MySQL Database
+- [MySQL](http://www.mysql.com/) Database
 - Python (2.6+)
   - [Requests](http://docs.python-requests.org/en/latest/)
-  - [MySQLdb](https://github.com/farcepest/MySQLdb1)
-- Webserver with PHP
+  - [MySQLdb](http://sourceforge.net/projects/mysql-python/)
+- Optional: Webserver with PHP
   - [PDO](http://php.net/manual/en/book.pdo.php)
     - [MySQL driver](http://php.net/manual/en/ref.pdo-mysql.php)
 
 ### Building
 1. Replace all placeholders in all files with actual data
-  - `YOUR_HOST` and `YOUR_RESOURCE` in `chatload.cpp`
-  - `SQL_USER_PASSWORD` in `chatload_db.sql`
-  - `SQL_USER_PASSWORD` and `MYSQL_SOCKET` in `charDump.php` and `addDataToCharDump.py`
-2. Make sure `charDump.php` is available via POST request
-3. Log into your MySQL server and execute `chatload_db.sql` to create a database and a user for the scripts
-4. Build chatload.cpp using the [C++ REST SDK (Casablanca)](http://casablanca.codeplex.com/)
+  - `YOUR_HOST` and `YOUR_RESOURCE` in `src/chatload.cpp`
+  - `SQL_USER_PASSWORD` in `sql/chatload_db.sql`, `scripts/addDataToCharDump.py` and either `scripts/charDump.php` or `scripts/basicServer.py`
+2. Log into your MySQL server and execute `sql/chatload_db.sql` to create a database and a user for use with chatload
+3. Run `python scripts/basicServer.py` in the background or make sure `scripts/charDump.php` is available via POST request
+4. Build chatload.cpp
 5. Distribute and execute the compiled binary to add data to your database
-6. Execute `python addDataToCharDump.py` to add corporation, alliance and faction details to the character names
+6. Execute `python scripts/addDataToCharDump.py` to add corporation, alliance and faction details to the character names
 
 # Usage
 `chatload.exe` to upload all character names to the public database (binary release) or the specified POST endpoint (self-built).  
 `chatload.exe --version` to show version and license information.  
-`python addDataToCharDump.py` to add all publicly available data to your database (self-built).
+`python scripts/basicServer.py [PORT] [HOST]` to run a basic web server (self-built).  
+`python scripts/addDataToCharDump.py` to add all publicly available data to your database (self-built).
 
 # Credits
 chatload is released under the GNU General Public License, version 3. The full license is available in the `LICENSE` file.  
