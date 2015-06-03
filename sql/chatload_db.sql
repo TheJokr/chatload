@@ -1,6 +1,6 @@
 /*
  * chatload: collect EVE Online character names from chat logs
- * Copyright (C) 2015  Leo Blöcher
+ * Copyright (C) 2015  Leo BlÃ¶cher
  *
  * This file is part of chatload.
  *

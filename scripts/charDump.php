@@ -22,20 +22,20 @@
 // Script to dump character names to database for use with chatload
 <?php
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['name'])) {
-  $names = explode(",", $_POST['name']);
-  try {
-    $dbh = new PDO('mysql:host=localhost;dbname=chatloadDump;charset=utf8', 'chatloadDump', 'SQL_USER_PASSWORD');
-  } catch (PDOException $e) {
-    exit("Connection failed: ".$e->getMessage());
-  }
-  $dbh->beginTransaction();
-  $stmt = $dbh->prepare("INSERT IGNORE INTO `characters` (`characterName`) VALUES (:charName);");
-  foreach($names as $name) {
-    $stmt->execute(array("charName" => $name));
-    echo $name.": OK".PHP_EOL;
-  }
-  $dbh->commit();
+    $names = explode(",", $_POST['name']);
+    try {
+        $dbh = new PDO('mysql:host=localhost;dbname=chatloadDump;charset=utf8', 'chatloadDump', 'SQL_USER_PASSWORD');
+    } catch (PDOException $e) {
+        exit("Connection failed: ".$e->getMessage());
+    }
+    $dbh->beginTransaction();
+    $stmt = $dbh->prepare("INSERT IGNORE INTO `characters` (`characterName`) VALUES (:charName);");
+    foreach($names as $name) {
+        $stmt->execute(array("charName" => $name));
+        echo $name.": OK".PHP_EOL;
+    }
+    $dbh->commit();
 } else {
-  echo "Invalid request";
+    echo "Invalid request";
 }
 ?>

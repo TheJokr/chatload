@@ -53,7 +53,7 @@ class SrvHandler(BaseHTTPRequestHandler):
         names = form.getvalue('name').split(",")
         for char in names:
             cur.execute("INSERT IGNORE INTO `characters` (`characterName`) VALUES (%s);", [str(char)])
-            self.wfile.write(str(char) + ": OK\r\n")
+            self.wfile.write(str(char) + ": OK\n")
         conn.commit()
 
 
