@@ -30,7 +30,7 @@ import requests
 
 def split_list(alist, wanted_parts=1):
     length = len(alist)
-    return [alist[i*length // wanted_parts: (i+1)*length // wanted_parts]
+    return [alist[i*length // wanted_parts : (i+1)*length // wanted_parts]
             for i in range(wanted_parts)]
 
 
@@ -58,7 +58,7 @@ parts = split_list(allData, (len(allData)//200)+1)
 # Add all the API data
 removeCharacters = list()
 for charList in parts:
-    payload = {"names":",".join([char[2] for char in charList])}
+    payload = {"names" : ",".join([char[2] for char in charList])}
     r = requests.post("https://api.eveonline.com/eve/CharacterID.xml.aspx", data=payload, headers={"User-Agent":"CharacterDB Scraper"}, timeout=5)
     if (r.status_code != 200):
         print("Execution of POST request failed!")
@@ -71,9 +71,9 @@ for charList in parts:
         else:
             # Filter invalid characters
             removeCharacters.append(char)
-            print("INVALID: "+str(char[2])+" - Removed!")
+            print("INVALID CHARACTER NAME: "+str(char[2])+" - Removed!")
     charList = [char for char in charList if char[1] != None]
-    payload = {"ids":",".join([str(char[1]) for char in charList])}
+    payload = {"ids" : ",".join([str(char[1]) for char in charList])}
     r = requests.post("https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx", data=payload, headers={"User-Agent":"CharacterDB Scraper"}, timeout=10)
     if (r.status_code != 200):
         print("Execution of POST request failed!")
@@ -87,12 +87,13 @@ for charList in parts:
         char[6] = str(row.attrib['allianceName'])
         char[7] = int(row.attrib['factionID'])
         char[8] = str(row.attrib['factionName'])
+    # Sleep for 1 second to lower API load
     print("SecSleep")
     time.sleep(1)
 
 
 # Update DB
-print("Updating DB")
+print("Updating database")
 
 
 if (removeCharacters):
@@ -107,16 +108,17 @@ for part in parts:
 if (allData):
     print("Updating characters...")
     for char in allData:
-        cur.execute("UPDATE `characters` "
-                    "SET `characterID` = %(charID)s, "
-                    "`corporationID` = %(corpID)s, `corporationName` = %(corpName)s, "
-                    "`allianceID` = %(allyID)s, `allianceName` = %(allyName)s, "
-                    "`factionID` = %(facID)s, `factionName` = %(facName)s "
-                    "WHERE `ID` = %(id)s;",
-                    {"id":char[0],
-                    "charID":char[1],
-                    "corpID":char[3], "corpName":char[4],
-                    "allyID":(char[5] if char[5] != 0 else None), "allyName":(char[6] if char[6] != '' else None),
-                    "facID":(char[7] if char[7] != 0 else None), "facName":(char[8] if char[8] != '' else None)})
+        cur.execute('''
+            UPDATE `characters`
+              SET `characterID` = %(charID)s,
+              `corporationID` = %(corpID)s, `corporationName` = %(corpName)s,
+              `allianceID` = %(allyID)s, `allianceName` = %(allyName)s,
+              `factionID` = %(facID)s, `factionName` = %(facName)s
+              WHERE `ID` = %(id)s;''',
+            {"id":char[0],
+            "charID":char[1],
+            "corpID":char[3], "corpName":char[4],
+            "allyID":(char[5] if char[5] != 0 else None), "allyName":(char[6] if char[6] != '' else None),
+            "facID":(char[7] if char[7] != 0 else None), "facName":(char[8] if char[8] != '' else None)})
 
 conn.commit()
