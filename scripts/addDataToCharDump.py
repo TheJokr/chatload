@@ -23,22 +23,32 @@
 # Script to add publicly available data to character names for use with chatload
 import time
 import sys
-import MySQLdb
 import xml.etree.ElementTree as ET
 import requests
 
+import MySQLdb
 
-def split_list(alist, wanted_parts=1):
-    length = len(alist)
-    return [alist[i*length // wanted_parts : (i+1)*length // wanted_parts]
+
+def split_list(inputList, wanted_parts=1):
+    length = len(inputList)
+    return [inputList[i*length // wanted_parts: (i+1)*length // wanted_parts]
             for i in range(wanted_parts)]
 
 
-# Request characters (update existing (>1 month since last update) and new ones (no characterID specified))
-conn = MySQLdb.connect(host="localhost", user="chatloadDump", passwd="SQL_USER_PASSWORD", db="chatloadDump", charset="utf8")
+# Request characters (existing ones (>1 month since last update) and new ones)
+conn = MySQLdb.connect(
+    host="localhost",
+    user="chatloadDump",
+    passwd="SQL_USER_PASSWORD",
+    db="chatloadDump",
+    charset="utf8")
 cur = conn.cursor()
 
-cur.execute("SELECT * FROM `characters` WHERE `lastModified` < DATE_SUB(CURDATE(), INTERVAL 1 MONTH) OR `characterID` IS NULL;")
+cur.execute(
+    '''SELECT *
+    FROM `characters`
+    WHERE `lastModified` < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+      OR `characterID` IS NULL;''')
 res = cur.fetchall()
 
 if (not res):
@@ -51,30 +61,37 @@ allData = list()
 for row in res:
     allData.append(list(row))
 
-# Divide output into lists of 200 chars (higher number seems to break some APIs)
+# Divide output into lists of 200 chars (higher number breaks some APIs)
 parts = split_list(allData, (len(allData)//200)+1)
 
 
-# Add all the API data
+# Add API data
 removeCharacters = list()
 for charList in parts:
-    payload = {"names" : ",".join([char[2] for char in charList])}
-    r = requests.post("https://api.eveonline.com/eve/CharacterID.xml.aspx", data=payload, headers={"User-Agent":"CharacterDB Scraper"}, timeout=5)
+    r = requests.post(
+        "https://api.eveonline.com/eve/CharacterID.xml.aspx",
+        data={"names": ",".join([char[2] for char in charList])},
+        headers={"User-Agent": "CharacterDB Scraper"},
+        timeout=5)
     if (r.status_code != 200):
         print("Execution of POST request failed!")
     # Replace Unicode replacement character with a ? to stop exceptions
     xml = ET.fromstring(r.text.replace(u"\uFFFD", u"?"))
     for char in charList:
         row = xml[1][0].find(".//*[@name='"+char[2]+"']")
-        if (row != None and row.attrib['characterID'] != '0'):
+        if (row is not None and row.attrib['characterID'] != '0'):
             char[1] = int(row.attrib["characterID"])
         else:
-            # Filter invalid characters
+            # These character names are invalid
             removeCharacters.append(char)
             print("INVALID CHARACTER NAME: "+str(char[2])+" - Removed!")
     charList = [char for char in charList if char[1] != None]
-    payload = {"ids" : ",".join([str(char[1]) for char in charList])}
-    r = requests.post("https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx", data=payload, headers={"User-Agent":"CharacterDB Scraper"}, timeout=10)
+    r = requests.post(
+        "https://api.eveonline.com"
+        "/eve/CharacterAffiliation.xml.aspx",
+        data={"ids": ",".join([str(char[1]) for char in charList])},
+        headers={"User-Agent": "CharacterDB Scraper"},
+        timeout=10)
     if (r.status_code != 200):
         print("Execution of POST request failed!")
     # Replace Unicode replacement character with a ? to stop exceptions
@@ -95,11 +112,12 @@ for charList in parts:
 # Update DB
 print("Updating database")
 
-
 if (removeCharacters):
     print("Removing characters...")
-    cur.executemany("DELETE FROM `characters` WHERE `ID` = %s;", [char[0] for char in removeCharacters])
-
+    cur.executemany(
+        '''DELETE FROM `characters`
+        WHERE `ID` = %s;''',
+        [char[0] for char in removeCharacters])
 
 allData = list()
 for part in parts:
@@ -108,17 +126,20 @@ for part in parts:
 if (allData):
     print("Updating characters...")
     for char in allData:
-        cur.execute('''
-            UPDATE `characters`
-              SET `characterID` = %(charID)s,
-              `corporationID` = %(corpID)s, `corporationName` = %(corpName)s,
-              `allianceID` = %(allyID)s, `allianceName` = %(allyName)s,
-              `factionID` = %(facID)s, `factionName` = %(facName)s
-              WHERE `ID` = %(id)s;''',
-            {"id":char[0],
-            "charID":char[1],
-            "corpID":char[3], "corpName":char[4],
-            "allyID":(char[5] if char[5] != 0 else None), "allyName":(char[6] if char[6] != '' else None),
-            "facID":(char[7] if char[7] != 0 else None), "facName":(char[8] if char[8] != '' else None)})
+        cur.execute(
+            '''UPDATE `characters`
+            SET `characterID` = %(charID)s,
+            `corporationID` = %(corpID)s, `corporationName` = %(corpName)s,
+            `allianceID` = %(allyID)s, `allianceName` = %(allyName)s,
+            `factionID` = %(facID)s, `factionName` = %(facName)s
+            WHERE `ID` = %(id)s;''',
+            {"id": char[0],
+             "charID": char[1],
+             "corpID": char[3],
+             "corpName": char[4],
+             "allyID": (char[5] if char[5] != 0 else None),
+             "allyName": (char[6] if char[6] != '' else None),
+             "facID": (char[7] if char[7] != 0 else None),
+             "facName": (char[8] if char[8] != '' else None)})
 
 conn.commit()

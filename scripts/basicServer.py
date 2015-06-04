@@ -23,7 +23,6 @@
 # Script with a simple webserver to serve chatload uploads
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from cgi import FieldStorage
-
 from sys import argv
 
 import MySQLdb
@@ -40,19 +39,31 @@ else:
     PORT = 8080
 
 
-conn = MySQLdb.connect(host="localhost", user="chatloadDump", passwd="SQL_USER_PASSWORD", db="chatloadDump", charset="utf8")
+conn = MySQLdb.connect(
+    host="localhost",
+    passwd="SQL_USER_PASSWORD",
+    user="chatloadDump",
+    db="chatloadDump",
+    charset="utf8")
 cur = conn.cursor()
 
 
 class SrvHandler(BaseHTTPRequestHandler):
     def do_POST(self):
-        self.send_response(200)
         self.send_header("Content-type", "text/plain")
+        self.send_response(200)
         self.end_headers()
-        form = FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':'POST', 'CONTENT_TYPE':self.headers['Content-Type']})
+        form = FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={'REQUEST_METHOD': 'POST',
+                     'CONTENT_TYPE': self.headers['Content-Type']})
         names = form.getvalue('name').split(",")
         for char in names:
-            cur.execute("INSERT IGNORE INTO `characters` (`characterName`) VALUES (%s);", [str(char)])
+            cur.execute(
+                '''INSERT IGNORE INTO `characters` (`characterName`)
+                VALUES (%s);''',
+                [str(char)])
             self.wfile.write(str(char) + ": OK\n")
         conn.commit()
 
