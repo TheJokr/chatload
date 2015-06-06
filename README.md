@@ -11,7 +11,8 @@ In order to change the endpoint, see [Configuration](#configuration).
 No log data is uploaded, just the scraped character names.
 
 ### Configuration
-`config.json` is used to determine which endpoint to use. If the file is not present upon execution, a new one will be generated using the default settings.  
+`config.json` is used to determine which endpoint to use.
+If the file is not present upon execution, a new one will be generated using the default settings.
 In order to use a custom endpoint, change the default values.  
 `host` refers to the base URI with protocol, hostname, and optionally a port number (eg. http://example.com).  
 `resource` refers to the Path, Query, and Fragment of the POST endpoint (eg. /exampleScript.php).  
@@ -37,7 +38,7 @@ In order to use a custom endpoint, change the default values.
   - Make sure to include a `config.json` file with your custom `host` and `resource`
 6. Execute `python scripts/addDataToCharDump.py` to add corporation, alliance and faction details to the character names
 
-*Note*: You might have to run `3to2` when using `scripts/basicServer.py` or `scripts/addDataToCharDump.py` with Python &ge; 3.0
+*Note*: You have to run `3to2` when using `scripts/basicServer.py` or `scripts/addDataToCharDump.py` with Python &ge; 3.0
 
 # Usage
 `chatload.exe` to upload all character names to the public database (default) or the specified POST endpoint (custom configuration file).  
