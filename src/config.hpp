@@ -48,4 +48,4 @@ namespace chatload {
 }
 
 
-#endif // End of #ifndef CHATLOAD_CONFIG_H
+#endif // CHATLOAD_CONFIG_H
