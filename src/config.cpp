@@ -32,25 +32,14 @@
 // Exceptions
 #include <exception>
 
+// Utility
+#include <algorithm>
+
 // Casablanca (JSON)
 #include <cpprest\json.h>
 
 // chatload::config forward declaration
 #include "config.hpp"
-
-
-// Returns a std::vector with parts of input splitted at delim
-std::vector<std::wstring> splitString(const std::wstring& input, const wchar_t& delim) {
-    std::wstringstream wss(input);
-    std::wstring content;
-    std::vector<std::wstring> parts;
-
-    while (std::getline(wss, content, delim)) {
-        parts.push_back(content);
-    }
-
-    return parts;
-}
 
 
 // Returns true if filename exists, false otherwise
@@ -84,7 +73,8 @@ std::wstring get_file_content(const std::wstring& filename) {
         return content;
     } else {
         in.close();
-        return L"ERR";
+        std::cout << "ERROR: Can't read file content" << std::endl;
+        return L"";
     }
 }
 
@@ -105,6 +95,27 @@ bool set_file_content(const std::wstring& filename, const std::wstring& content)
 }
 
 
+// Returns a std::vector with parts of input splitted at delim
+std::vector<std::wstring> splitString(const std::wstring& input, const wchar_t& delim) {
+    std::wstringstream wss(input);
+    std::wstring content;
+    std::vector<std::wstring> parts;
+
+    while (std::getline(wss, content, delim)) {
+        parts.push_back(content);
+    }
+
+    return parts;
+}
+
+
+// Returns a std::wstring with the content of input without removeChar without modifying input
+std::wstring removeCharacter(std::wstring input, const wchar_t& removeChar) {
+    input.erase(std::remove(input.begin(), input.end(), removeChar), input.end());
+    return input;
+}
+
+
 namespace chatload {
     // Default config
     static const web::json::value DEFAULTCONFIG = web::json::value::parse(L"{\"POST\": {\"host\": \"http://api.dashsec.com\", \"resource\": \"/charDump.php\", \"parameter\": \"name\"}}");
@@ -121,7 +132,7 @@ namespace chatload {
 
         if (fileExists(cfgFilename)) {
             try {
-                cfgObj = web::json::value::parse(get_file_content(cfgFilename));
+                cfgObj = web::json::value::parse(removeCharacter(get_file_content(cfgFilename), '\n'));
                 return true;
             } catch (std::exception& ex) {
                 std::cout << "ERROR: " << ex.what() << std::endl;
@@ -149,7 +160,7 @@ namespace chatload {
     bool config::reload() {
         if (fileExists(cfgFilename)) {
             try {
-                cfgObj = web::json::value::parse(get_file_content(cfgFilename));
+                cfgObj = web::json::value::parse(removeCharacter(get_file_content(cfgFilename), '\n'));
             } catch (std::exception& ex) {
                 std::cout << "ERROR: " << ex.what() << std::endl;
             }
@@ -166,7 +177,7 @@ namespace chatload {
         try {
             std::vector<std::wstring> objPath = splitString(path, L'/');
 
-            web::json::value val = cfgObj.at(objPath[0]);
+            web::json::value& val = cfgObj.at(objPath[0]);
             for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
                 val = val.at(*iter);
             }
