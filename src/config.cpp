@@ -177,7 +177,7 @@ namespace chatload {
         try {
             std::vector<std::wstring> objPath = splitString(path, L'/');
 
-            web::json::value& val = cfgObj.at(objPath[0]);
+            web::json::value val = cfgObj.at(objPath[0]);
             for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
                 val = val.at(*iter);
             }
