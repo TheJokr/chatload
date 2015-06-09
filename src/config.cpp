@@ -120,7 +120,7 @@ namespace chatload {
     // Default config
     static const web::json::value DEFAULTCONFIG = web::json::value::parse(L"{\"POST\": {\"host\": \"http://api.dashsec.com\", \"resource\": \"/charDump.php\", \"parameter\": \"name\"}}");
 
-    // Chatload::config member functions
+    // chatload::config load/save functions
     // Constructor
     config::config(const std::wstring& filename) {
         load(filename);
@@ -172,6 +172,8 @@ namespace chatload {
         return true;
     }
 
+    // chatload::config get/set functions
+    // path is a std::wstring in the format "path/to/value" and specifies which value to get/set
     // Returns a web::json::value with the content of path or an empty value if the lookup fails
     web::json::value config::get(const std::wstring& path) {
         try {
