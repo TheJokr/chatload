@@ -116,6 +116,38 @@ std::wstring removeCharacter(std::wstring input, const wchar_t& removeChar) {
 }
 
 
+// Returns a std::wstring with pretty output from input (serialized JSON document)
+std::wstring prettyJSON(std::wstring input) {
+    bool isString = false;
+    for (unsigned int iter = 0; iter < input.length(); iter++) {
+        // Beginning/end of string within JSON document
+        if (input[iter] == L'"' && (iter == 0 || input[iter - 1] != L'\\')) {
+            isString = !isString;
+        }
+        if (isString) {
+            continue;
+        }
+
+        // EOL after opening/closing brackets and commas
+        if (input[iter] == L'[' || input[iter] == L'{' || input[iter] == L',') {
+            input.insert(iter + 1, L"\n");
+            continue;
+        } else if (input[iter] == L']' || input[iter] == L'}') {
+            input.insert(iter, L"\n");
+            iter++;
+            continue;
+        }
+
+        // Space after colon
+        if (input[iter] == L':') {
+            input.insert(iter + 1, L" ");
+            continue;
+        }
+    }
+    return input;
+}
+
+
 namespace chatload {
     // Default config
     static const web::json::value DEFAULTCONFIG = web::json::value::parse(L"{\"POST\": {\"host\": \"http://api.dashsec.com\", \"resource\": \"/charDump.php\", \"parameter\": \"name\"}}");
