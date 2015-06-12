@@ -144,6 +144,33 @@ std::wstring prettyJSON(std::wstring input) {
             continue;
         }
     }
+
+    // Indentation (4 spaces)
+    isString = false;
+    unsigned int indentLevel = 0;
+    for (unsigned int iter = 0; iter < input.length(); iter++) {
+        // Beginning/end of string within JSON document
+        if (input[iter] == L'"' && (iter == 0 || input[iter - 1] != L'\\')) {
+            isString = !isString;
+        }
+        if (isString) {
+            continue;
+        }
+
+        // Add/remove indent level after opening/closing brackets
+        if (input[iter] == L'[' || input[iter] == L'{') {
+            indentLevel++;
+        } else if (input[iter + 1] == L']' || input[iter + 1] == L'}') {
+            indentLevel = (indentLevel == 0 ? 0 : indentLevel - 1);
+        }
+
+        if (input[iter] == L'\n') {
+            for (unsigned int indentIter = 0; indentIter < indentLevel; indentIter++) {
+                input.insert(iter + 1, L"    ");
+                iter = iter + 4;
+            }
+        }
+    }
     return input;
 }
 
