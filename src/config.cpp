@@ -110,7 +110,7 @@ std::vector<std::wstring> splitString(const std::wstring& input, const wchar_t& 
 
 
 // Returns a std::wstring with the content of input without removeChar without modifying input
-std::wstring removeCharacter(std::wstring input, const wchar_t& removeChar) {
+inline std::wstring removeCharacter(std::wstring input, const wchar_t& removeChar) {
     input.erase(std::remove(input.begin(), input.end(), removeChar), input.end());
     return input;
 }
@@ -227,7 +227,6 @@ namespace chatload {
             save();
             return false;
         }
-
         return true;
     }
 
@@ -235,9 +234,9 @@ namespace chatload {
     // path is a std::wstring in the format "path/to/value" and specifies which value to get/set
     // Returns a web::json::value with the content of path or an empty value if the lookup fails
     web::json::value config::get(const std::wstring& path) {
-        try {
-            std::vector<std::wstring> objPath = splitString(path, L'/');
+        std::vector<std::wstring> objPath = splitString(path, L'/');
 
+        try {
             web::json::value val = cfgObj.at(objPath[0]);
             for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
                 val = val.at(*iter);
@@ -252,9 +251,9 @@ namespace chatload {
 
     // Returns true after setting path to content or false if it fails
     bool config::set(const std::wstring& path, const std::wstring& content) {
-        try {
-            std::vector<std::wstring> objPath = splitString(path, L'/');
+        std::vector<std::wstring> objPath = splitString(path, L'/');
 
+        try {
             web::json::value& val = cfgObj[objPath[0]];
             for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
                 val = val[*iter];
