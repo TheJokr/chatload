@@ -47,7 +47,7 @@ In order to use a custom endpoint, change the default values.
 `python scripts/addDataToCharDump.py` to add all publicly available data to your own database (own Database).
 
 # Credits
-chatload is released under the GNU General Public License, version 3. The full license is available in the `LICENSE` file.  
+chatload is released under the GNU General Public License, version 3. The full license is available in the `COPYING` file.  
 Copyright (C) 2015  Leo Bl&ouml;cher
 
 # Contact
