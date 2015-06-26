@@ -109,13 +109,6 @@ std::vector<std::wstring> splitString(const std::wstring& input, const wchar_t& 
 }
 
 
-// Returns a std::wstring with the content of input without removeChar without modifying input
-inline std::wstring removeCharacter(std::wstring input, const wchar_t& removeChar) {
-    input.erase(std::remove(input.begin(), input.end(), removeChar), input.end());
-    return input;
-}
-
-
 // Returns a std::wstring with pretty output from input (serialized JSON document)
 std::wstring prettyJSON(std::wstring input) {
     bool isString = false;
@@ -191,7 +184,7 @@ namespace chatload {
 
         if (fileExists(cfgFilename)) {
             try {
-                cfgObj = web::json::value::parse(removeCharacter(get_file_content(cfgFilename), '\n'));
+                cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
                 return true;
             } catch (std::exception& ex) {
                 std::cout << "ERROR: " << ex.what() << std::endl;
@@ -207,7 +200,7 @@ namespace chatload {
     // Returns true after saving the current configuration to cfgFilename
     bool config::save() {
         try {
-            set_file_content(cfgFilename, cfgObj.serialize());
+            set_file_content(cfgFilename, prettyJSON(cfgObj.serialize()));
         } catch (std::exception& ex) {
             std::cout << "ERROR: " << ex.what() << std::endl;
             return false;
@@ -219,7 +212,7 @@ namespace chatload {
     bool config::reload() {
         if (fileExists(cfgFilename)) {
             try {
-                cfgObj = web::json::value::parse(removeCharacter(get_file_content(cfgFilename), '\n'));
+                cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
             } catch (std::exception& ex) {
                 std::cout << "ERROR: " << ex.what() << std::endl;
             }
