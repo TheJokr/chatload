@@ -1,4 +1,4 @@
-# chatload
+# chatload [![Build Status](https://travis-ci.org/TheJokr/chatload.svg?branch=master)](https://travis-ci.org/TheJokr/chatload)
 chatload is a Windows console application written in C++ and created to collect EVE Online character names from chat logs and store them in a database.
 
 # Installation

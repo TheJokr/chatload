@@ -1,0 +1,20 @@
+language: python
+
+python: 2.7
+
+services: mysql
+
+install:
+    - pip install pep8
+    - sudo apt-get install -y php5-cli
+
+before_script:
+    - mysql -uroot < sql/chatload_db.sql
+    - wget https://google-styleguide.googlecode.com/svn/trunk/cpplint/cpplint.py
+
+script:
+    - php -l scripts/charDump.php
+    - pep8 scripts/addDataToCharDump.py
+    - pep8 scripts/basicServer.py
+    - python cpplint.py --extensions=hpp,cpp src/*
+
