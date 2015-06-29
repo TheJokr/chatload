@@ -33,19 +33,20 @@
 
 
 namespace chatload {
-    class config {
-        private:
-            std::wstring cfgFilename;
-            web::json::value cfgObj;
-        public:
-            config(const std::wstring& filename = L"config.json");
-            bool load(const std::wstring& filename);
-            bool save();
-            bool reload();
-            web::json::value get(const std::wstring& path);
-            bool set(const std::wstring& path, web::json::value content);
-    };
-}
+class config {
+ private:
+    std::wstring cfgFilename;
+    web::json::value cfgObj;
+
+ public:
+    explicit config(const std::wstring& filename);
+    bool load(const std::wstring& filename);
+    bool save();
+    bool reload();
+    web::json::value get(const std::wstring& path);
+    bool set(const std::wstring& path, web::json::value content);
+};
+}  // namespace chatload
 
 
-#endif // CHATLOAD_CONFIG_H
+#endif  // CHATLOAD_CONFIG_H

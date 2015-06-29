@@ -56,8 +56,8 @@
 
 // Chatload constants
 namespace chatload {
-    // Version
-    static const std::string VERSION = "1.3.0";
+// Version
+static const std::string VERSION = "1.3.0";
 }
 
 
@@ -90,7 +90,8 @@ std::vector<std::wstring> ReadLogs(bool showReadFiles = true, std::wregex patter
         if (std::regex_match(filename, pattern)) {
             // EVE Online logs are UCS-2 (LE) encoded
             std::wifstream filestream(logDir + filename, std::ios::binary);
-            filestream.imbue(std::locale(filestream.getloc(), new std::codecvt_utf16<wchar_t, 0xffff, std::consume_header>));
+            filestream.imbue(std::locale(
+                filestream.getloc(), new std::codecvt_utf16<wchar_t, 0xffff, std::consume_header>));
 
             // Ignore first 12 lines (metadata)
             for (int iter = 0; iter < 12; iter++) {
@@ -160,7 +161,8 @@ int main(int argc, char* argv[]) {
         std::cout << argv[0] << " " << chatload::VERSION << std::endl;
         std::cout << "Copyright (C) 2015  Leo Bloecher" << std::endl << std::endl;
         std::cout << "This program comes with ABSOLUTELY NO WARRANTY." << std::endl;
-        std::cout << "This is free software, and you are welcome to redistribute it under certain conditions." << std::endl;
+        std::cout << "This is free software, and you are welcome to redistribute it under certain conditions.";
+        std::cout << std::endl;
         return 0;
     }
 
@@ -169,7 +171,8 @@ int main(int argc, char* argv[]) {
     chatload::config cfg(L"config.json");
 
 
-    std::cout << "This app scrapes your EVE Online chat logs for character names and adds them to a database" << std::endl << std::endl;
+    std::cout << "This app scrapes your EVE Online chat logs for character names and adds them to a database";
+    std::cout << std::endl << std::endl;
 
 
     // Read all logs
@@ -204,7 +207,11 @@ int main(int argc, char* argv[]) {
 
     // POST character names
     std::cout << "Adding character names to database" << std::endl;
-    pplx::task<web::http::http_response> postChars = client.request(web::http::methods::POST, cfg.get(L"POST/resource").as_string(), cfg.get(L"POST/parameter").as_string() + L"=" + joinVec(charNames, L","), L"application/x-www-form-urlencoded");
+    pplx::task<web::http::http_response> postChars = client.request(
+        web::http::methods::POST, cfg.get(L"POST/resource").as_string(),
+        cfg.get(L"POST/parameter").as_string() + L"=" + joinVec(charNames, L","),
+        L"application/x-www-form-urlencoded");
+
     postChars.then([=](web::http::http_response response) {
         if (response.status_code() == web::http::status_codes::OK) {
             std::cout << "Successfully added character names to DB" << std::endl << std::endl;

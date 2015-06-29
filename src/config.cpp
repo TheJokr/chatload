@@ -166,94 +166,95 @@ std::wstring prettyJSON(std::wstring input) {
 
 
 namespace chatload {
-    // Default config
-    static const web::json::value DEFAULTCONFIG = web::json::value::parse(L"{\"POST\": {\"host\": \"http://api.dashsec.com\", \"resource\": \"/charDump.php\", \"parameter\": \"name\"}}");
+// Default config
+static const web::json::value DEFAULTCONFIG = web::json::value::parse(
+    L"{\"POST\": {\"host\": \"http://api.dashsec.com\", \"resource\": \"/charDump.php\", \"parameter\": \"name\"}}");
 
-    // chatload::config load/save functions
-    // Constructor
-    config::config(const std::wstring& filename) {
-        load(filename);
-    }
+// chatload::config load/save functions
+// Constructor
+config::config(const std::wstring& filename) {
+    load(filename);
+}
 
-    // Returns true after loading filename as new configuration or false when the default configuration is used
-    bool config::load(const std::wstring& filename) {
-        cfgFilename = filename;
+// Returns true after loading filename as new configuration or false when the default configuration is used
+bool config::load(const std::wstring& filename) {
+    cfgFilename = filename;
 
-        if (fileExists(cfgFilename)) {
-            try {
-                cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
-                return true;
-            } catch (std::exception& ex) {
-                std::cout << "ERROR: " << ex.what() << std::endl;
-                cfgObj = chatload::DEFAULTCONFIG;
-            }
-        } else {
-            cfgObj = chatload::DEFAULTCONFIG;
-            save();
-        }
-        return false;
-    }
-
-    // Returns true after saving the current configuration to cfgFilename
-    bool config::save() {
+    if (fileExists(cfgFilename)) {
         try {
-            set_file_content(cfgFilename, prettyJSON(cfgObj.serialize()));
+            cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
+            return true;
+        } catch (std::exception& ex) {
+            std::cout << "ERROR: " << ex.what() << std::endl;
+            cfgObj = chatload::DEFAULTCONFIG;
+        }
+    } else {
+        cfgObj = chatload::DEFAULTCONFIG;
+        save();
+    }
+    return false;
+}
+
+// Returns true after saving the current configuration to cfgFilename
+bool config::save() {
+    try {
+        set_file_content(cfgFilename, prettyJSON(cfgObj.serialize()));
+        return true;
+    } catch (std::exception& ex) {
+        std::cout << "ERROR: " << ex.what() << std::endl;
+    }
+    return false;
+}
+
+// Returns true after reloading the configuration from cfgFilename or false when the default configuration is used
+bool config::reload() {
+    if (fileExists(cfgFilename)) {
+        try {
+            cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
             return true;
         } catch (std::exception& ex) {
             std::cout << "ERROR: " << ex.what() << std::endl;
         }
-        return false;
+    } else {
+        save();
     }
+    return false;
+}
 
-    // Returns true after reloading the configuration from cfgFilename or false when the default configuration is used
-    bool config::reload() {
-        if (fileExists(cfgFilename)) {
-            try {
-                cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
-                return true;
-            } catch (std::exception& ex) {
-                std::cout << "ERROR: " << ex.what() << std::endl;
-            }
-        } else {
-            save();
+// chatload::config get/set functions
+// path is a std::wstring in the format "path/to/value" and specifies which value to get/set
+// Returns a web::json::value with the content of path or an empty value if the lookup fails
+web::json::value config::get(const std::wstring& path) {
+    std::vector<std::wstring> objPath = splitString(path, L'/');
+
+    try {
+        web::json::value val = cfgObj.at(objPath[0]);
+        for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
+            val = val.at(*iter);
         }
-        return false;
-    }
 
-    // chatload::config get/set functions
-    // path is a std::wstring in the format "path/to/value" and specifies which value to get/set
-    // Returns a web::json::value with the content of path or an empty value if the lookup fails
-    web::json::value config::get(const std::wstring& path) {
-        std::vector<std::wstring> objPath = splitString(path, L'/');
-
-        try {
-            web::json::value val = cfgObj.at(objPath[0]);
-            for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
-                val = val.at(*iter);
-            }
-
-            return val;
-        } catch (web::json::json_exception& ex) {
-            std::cout << "ERROR: " << ex.what() << std::endl;
-            return web::json::value();
-        }
-    }
-
-    // Returns true after setting path to content or false if it fails
-    bool config::set(const std::wstring& path, web::json::value content) {
-        std::vector<std::wstring> objPath = splitString(path, L'/');
-
-        try {
-            web::json::value& val = cfgObj[objPath[0]];
-            for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
-                val = val[*iter];
-            }
-
-            val = content;
-            return true;
-        } catch (web::json::json_exception& ex) {
-            std::cout << "ERROR: " << ex.what() << std::endl;
-            return false;
-        }
+        return val;
+    } catch (web::json::json_exception& ex) {
+        std::cout << "ERROR: " << ex.what() << std::endl;
+        return web::json::value();
     }
 }
+
+// Returns true after setting path to content or false if it fails
+bool config::set(const std::wstring& path, web::json::value content) {
+    std::vector<std::wstring> objPath = splitString(path, L'/');
+
+    try {
+        web::json::value& val = cfgObj[objPath[0]];
+        for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
+            val = val[*iter];
+        }
+
+        val = content;
+        return true;
+    } catch (web::json::json_exception& ex) {
+        std::cout << "ERROR: " << ex.what() << std::endl;
+        return false;
+    }
+}
+}  // namespace chatload
