@@ -24,14 +24,14 @@ In order to use a custom endpoint, change the default values.
 - [MySQL](http://www.mysql.com/)/[MariaDB](http://mariadb.org/) Database
 - Python (2.6+)
   - [Requests](http://docs.python-requests.org/en/latest/)
-  - [MySQLdb](http://sourceforge.net/projects/mysql-python/)
+  - [MySQL Connector/Python](http://dev.mysql.com/doc/connector-python/en/index.html)
 - Optional: Webserver with PHP
   - [PDO](http://php.net/manual/en/book.pdo.php)
     - [MySQL driver](http://php.net/manual/en/ref.pdo-mysql.php)
 
 ### Building
-1. Replace `SQL_USER_PASSWORD` in `sql/chatload_db.sql`, `scripts/addDataToCharDump.py` and either `scripts/charDump.php` or `scripts/basicServer.py` with an actual password
-2. Log into your MySQL server and execute `sql/chatload_db.sql` to create a database and a user for use with chatload scripts
+1. Replace `SQL_USER_PASSWORD` in `sql/chatload_db.sql`, `scripts/addDataToCharDump.py`,  `scripts/charDump.php` and `scripts/basicServer.py` with a password
+2. Log into your MySQL server and execute `sql/chatload_db.sql` to create a database and a user for chatload
 3. Run `python scripts/basicServer.py [PORT] [HOST]` in the background or make sure `scripts/charDump.php` is available via POST request
 4. Build chatload.exe
 5. Distribute and execute the compiled binary to add data to your database
@@ -43,8 +43,8 @@ In order to use a custom endpoint, change the default values.
 # Usage
 `chatload.exe` to upload all character names to the public database (default) or the specified POST endpoint (custom configuration file).  
 `chatload.exe --version` to show version and license information.  
-`python scripts/basicServer.py [PORT] [HOST]` to run a basic web server (own Database).  
-`python scripts/addDataToCharDump.py` to add all publicly available data to your own database (own Database).
+`python scripts/basicServer.py [PORT] [HOST]` to run a basic web server which will add character names to your database.  
+`python scripts/addDataToCharDump.py` to add all publicly available data to your database.
 
 # Credits
 chatload is released under the GNU General Public License, version 3. The full license is available in the `COPYING` file.  
