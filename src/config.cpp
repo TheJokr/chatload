@@ -32,9 +32,6 @@
 // Exceptions
 #include <exception>
 
-// Utility
-#include <algorithm>
-
 // Casablanca (JSON)
 #include <cpprest\json.h>
 
