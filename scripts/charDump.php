@@ -1,3 +1,4 @@
+<?php
 /*
  * chatload: collect EVE Online character names from chat logs
  * Copyright (C) 2015  Leo Blöcher
@@ -19,8 +20,7 @@
  */
 
 
-// Script to dump character names to database for use with chatload
-<?php
+// Script to serve chatload uploads
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['name'])) {
     $names = explode(",", $_POST['name']);
     try {
