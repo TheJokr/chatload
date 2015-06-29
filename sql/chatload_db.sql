@@ -19,11 +19,10 @@
  */
 
 
--- MySQL script to create user and database for use with chatload
+-- MySQL script to create chatload user and database
 CREATE DATABASE IF NOT EXISTS `chatloadDump` DEFAULT CHARSET = utf8;
 
-CREATE USER 'chatloadDump'@'localhost' IDENTIFIED BY 'SQL_USER_PASSWORD';
-GRANT ALL ON `chatloadDump`.* TO 'chatloadDump'@'localhost';
+GRANT ALL ON `chatloadDump`.* TO 'chatloadDump'@'localhost' IDENTIFIED BY 'SQL_USER_PASSWORD';
 FLUSH PRIVILEGES;
 
 
