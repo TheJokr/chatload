@@ -25,7 +25,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from cgi import FieldStorage
 from sys import argv
 
-import MySQLdb
+import mysql.connector
 
 
 if (len(argv) > 2):
@@ -39,11 +39,11 @@ else:
     PORT = 8080
 
 
-conn = MySQLdb.connect(
+conn = mysql.connector.connect(
     host="localhost",
-    passwd="SQL_USER_PASSWORD",
     user="chatloadDump",
-    db="chatloadDump",
+    password="SQL_USER_PASSWORD",
+    database="chatloadDump",
     charset="utf8")
 cur = conn.cursor()
 
@@ -62,7 +62,7 @@ class SrvHandler(BaseHTTPRequestHandler):
         for char in names:
             cur.execute(
                 '''INSERT IGNORE INTO `characters` (`characterName`)
-                VALUES (%s);''',
+                   VALUES (%s);''',
                 [str(char)])
             self.wfile.write(str(char) + ": OK\n")
         conn.commit()
@@ -70,6 +70,6 @@ class SrvHandler(BaseHTTPRequestHandler):
 
 print("Server is starting up...")
 httpd = HTTPServer((HOST, PORT), SrvHandler)
-print("Serving at: http://{}:{}".format((HOST or "localhost"), PORT))
+print("Serving at http://{}:{}".format((HOST or "localhost"), PORT))
 
 httpd.serve_forever()
