@@ -198,11 +198,11 @@ namespace chatload {
     bool config::save() {
         try {
             set_file_content(cfgFilename, prettyJSON(cfgObj.serialize()));
+            return true;
         } catch (std::exception& ex) {
             std::cout << "ERROR: " << ex.what() << std::endl;
-            return false;
         }
-        return true;
+        return false;
     }
 
     // Returns true after reloading the configuration from cfgFilename or false when the default configuration is used
@@ -210,14 +210,14 @@ namespace chatload {
         if (fileExists(cfgFilename)) {
             try {
                 cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
+                return true;
             } catch (std::exception& ex) {
                 std::cout << "ERROR: " << ex.what() << std::endl;
             }
         } else {
             save();
-            return false;
         }
-        return true;
+        return false;
     }
 
     // chatload::config get/set functions
