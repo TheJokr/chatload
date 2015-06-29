@@ -240,7 +240,7 @@ namespace chatload {
     }
 
     // Returns true after setting path to content or false if it fails
-    bool config::set(const std::wstring& path, const std::wstring& content) {
+    bool config::set(const std::wstring& path, web::json::value content) {
         std::vector<std::wstring> objPath = splitString(path, L'/');
 
         try {
@@ -249,7 +249,7 @@ namespace chatload {
                 val = val[*iter];
             }
 
-            val = web::json::value::string(content);
+            val = content;
             return true;
         } catch (web::json::json_exception& ex) {
             std::cout << "ERROR: " << ex.what() << std::endl;

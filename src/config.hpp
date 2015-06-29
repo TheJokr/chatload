@@ -43,7 +43,7 @@ namespace chatload {
             bool save();
             bool reload();
             web::json::value get(const std::wstring& path);
-            bool set(const std::wstring& path, const std::wstring& content);
+            bool set(const std::wstring& path, web::json::value content);
     };
 }
 
