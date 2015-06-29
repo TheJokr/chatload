@@ -2,11 +2,17 @@ language: python
 
 python: 2.7
 
+sudo: false
+
 services: mysql
+
+addons:
+  apt:
+    packages:
+    - php5-cli
 
 install:
     - pip install pep8
-    - sudo apt-get install -y php5-cli
 
 before_script:
     - mysql -uroot < sql/chatload_db.sql
@@ -16,5 +22,5 @@ script:
     - php -l scripts/charDump.php
     - pep8 scripts/addDataToCharDump.py
     - pep8 scripts/basicServer.py
-    - python cpplint.py --extensions=hpp,cpp src/*
+    - python cpplint.py --linelength=120 --extensions=hpp,cpp --filter=-build/c++11,-build/include_order src/*
 
