@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
+#include <tuple>
 #include <iterator>
 
 // Threading
@@ -186,10 +187,24 @@ int main(int argc, char* argv[]) {
     std::future<std::vector<std::wstring>> charNameThread = std::async(&filterNames, std::ref(allLines));
 
 
-    // Create Casablanca client
-    std::cout << "Establishing connection...";
-    web::http::client::http_client client(cfg.get(L"POST/host").as_string());
-    std::cout << " " << "Connection established" << std::endl << std::endl;
+    // Create Casablanca client(s)
+    // httpClients = std::vector<std::tuple<CLIENT, HOST, RESOURCE, PARAMETER>>
+    std::cout << "Establishing connection(s)...";
+    std::vector<std::tuple<web::http::client::http_client, std::wstring, std::wstring, std::wstring>> httpClients;
+    try {
+        web::json::array POSTEndpoints = cfg.get(L"POST").as_array();
+        for (auto endpoint : POSTEndpoints) {
+            httpClients.push_back(std::make_tuple(
+                web::http::client::http_client(endpoint.at(L"host").as_string()),
+                endpoint.at(L"host").as_string(),
+                endpoint.at(L"resource").as_string(),
+                endpoint.at(L"parameter").as_string()));
+        }
+    } catch (web::json::json_exception& ex) {
+        std::cout << "ERROR: " << ex.what() << std::endl;
+        return 1;
+    }
+    std::cout << " " << httpClients.size() << " connection(s) established" << std::endl << std::endl;
 
 
     // Wait for character names to become available
@@ -207,22 +222,23 @@ int main(int argc, char* argv[]) {
 
     // POST character names
     std::cout << "Adding character names to database" << std::endl;
-    pplx::task<web::http::http_response> postChars = client.request(
-        web::http::methods::POST, cfg.get(L"POST/resource").as_string(),
-        cfg.get(L"POST/parameter").as_string() + L"=" + joinVec(charNames, L","),
-        L"application/x-www-form-urlencoded");
+    for (auto client : httpClients) {
+        pplx::task<web::http::http_response> postThread = std::get<0>(client).request(
+            web::http::methods::POST,
+            std::get<2>(client),
+            std::get<3>(client) + L"=" + joinVec(charNames, L","),
+            L"application/x-www-form-urlencoded");
 
-    postChars.then([=](web::http::http_response response) {
-        if (response.status_code() == web::http::status_codes::OK) {
-            std::cout << "Successfully added character names to DB" << std::endl << std::endl;
-        } else {
-            std::cout << "Failed to add character names to DB" << std::endl << std::endl;
-        }
-    });
-
-
-    // Wait for upload to finish
-    postChars.wait();
+        postThread.then([=](web::http::http_response response) {
+            if (response.status_code() == web::http::status_codes::OK) {
+                std::wcout << L"Successfully added character names to DB at " << std::get<1>(client) << std::endl;
+            } else {
+                std::wcout << L"Failed to add character names to DB at " << std::get<1>(client) << std::endl;
+            }
+        });
+        postThread.wait();
+    }
+    std::cout << std::endl;
 
 
     // End program
