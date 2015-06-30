@@ -1,4 +1,10 @@
 # Changelog
+## 1.4.0
+- Added Travis CI
+- Added support for multiple POST endpoints
+- Added support for custom regular expressions to filter the files read by the application
+- Changed python scripts to use MySQL Connector/Python instead of MySQLdb
+
 ## 1.3.0
 - Added "pretty" JSON output
 - Added "pretty" JSON parsing

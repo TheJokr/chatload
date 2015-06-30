@@ -2,7 +2,7 @@
 chatload is a Windows console application written in C++ and created to collect EVE Online character names from chat logs and store them in a database.
 
 # Installation
-You can either download the [latest binary release](https://github.com/TheJokr/chatload/releases/latest) to contribute to any database or build it yourself (including your own database).
+You can either download the [latest binary release](https://github.com/TheJokr/chatload/releases/latest) to contribute to any existing database or build it yourself (including your own database).
 
 ## Binary release
 After downloading and unzipping the [latest release](https://github.com/TheJokr/chatload/releases/latest), run `chatload.exe` to upload all character names found in all your log files to the public database.  
@@ -13,10 +13,32 @@ No log data is uploaded, just the scraped character names.
 ### Configuration
 `config.json` is used to determine which endpoint to use.
 If the file is not present upon execution, a new one will be generated using the default settings.
-In order to use a custom endpoint, change the default values.  
-`host` refers to the base URI with protocol, hostname, and optionally a port number (eg. http://example.com).  
-`resource` refers to the Path, Query, and Fragment of the POST endpoint (eg. /exampleScript.php).  
-`parameter` refers to the POST parameter used to reference the character names on the server (eg. `$_POST['parameter']` in a PHP script).
+In order to use (a) custom endpoint(s), change the default values.  
+`POST` is an array of objects, each containing:
+- `host`: the base URI with protocol, hostname, and optionally a port number (eg. http://example.com).
+- `resource`: the Path, Query, and Fragment of the POST endpoint (eg. /exampleScript.php).
+- `parameter`: the POST parameter used to reference the character names on the server (eg. `$_POST['parameter']` in a PHP script).
+
+`regex` is a string containing a regular expression used to filter the files which are read by `chatload`. Use `.*` to match all files.
+
+#### Example
+```json
+{
+    "POST": [
+        {
+            "host": "http://server1.example.com",
+            "parameter": "names",
+            "resource": "/uploadCharacterNames.php"
+        },
+        {
+            "host": "http://server2.example.com:8080",
+            "parameter": "names",
+            "resource": "/scripts/statistics.php"
+        }
+    ],
+    "regex": ".*"
+}
+```
 
 ## Building (Windows)
 ### Requirements
@@ -35,7 +57,7 @@ In order to use a custom endpoint, change the default values.
 3. Run `python scripts/basicServer.py [PORT] [HOST]` in the background or make sure `scripts/charDump.php` is available via POST request
 4. Build chatload.exe
 5. Distribute and execute the compiled binary to add data to your database
-  - Make sure to include a `config.json` file with your custom `host` and `resource`
+  - Make sure to include a `config.json` file with your custom settings
 6. Execute `python scripts/addDataToCharDump.py` to add corporation, alliance and faction details to the character names
 
 *Note*: You have to run `3to2` when using `scripts/basicServer.py` or `scripts/addDataToCharDump.py` with Python &ge; 3.0
