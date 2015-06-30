@@ -168,7 +168,7 @@ std::wstring prettyJSON(std::wstring input) {
 namespace chatload {
 // Default config
 static const web::json::value DEFAULTCONFIG = web::json::value::parse(
-    L"{\"POST\": [{\"host\": \"http://api.dashsec.com\", \"resource\": \"/charDump.php\", \"parameter\": \"name\"}]}");
+    L"{\"POST\": [{\"host\": \"http://api.dashsec.com\", \"resource\": \"/charDump.php\", \"parameter\": \"name\"}], \"regex\": \".*\"}");
 
 // chatload::config load/save functions
 // Constructor

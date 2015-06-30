@@ -72,7 +72,7 @@ std::wstring GetHomeDirectory() {
 
 
 // Returns a std::vector<std::wstring> with all lines from all chat logs whose name matches pattern
-std::vector<std::wstring> ReadLogs(bool showReadFiles = true, std::wregex pattern = std::wregex(L".*")) {
+std::vector<std::wstring> ReadLogs(bool showReadFiles, std::wregex& pattern) {
     std::wstring logDir = GetHomeDirectory() + L"\\Documents\\EVE\\logs\\Chatlogs\\";
     std::wstring filename;
     std::wstring line;
@@ -126,10 +126,10 @@ std::vector<std::wstring> filterNames(const std::vector<std::wstring>& vec) {
      * wmatches[1] = CHARACTER_NAME
      */
     std::wsmatch wmatches;
-    std::wregex wexp(L"\\[[\\d\\.\\s:]{21}\\]\\s([\\w\\s]+)\\s>.*");
+    std::wregex charNameRegex(L"\\[[\\d\\.\\s:]{21}\\]\\s([\\w\\s]+)\\s>.*");
 
-    for (const auto& wstr : vec) {
-        if (std::regex_search(wstr, wmatches, wexp)) {
+    for (const auto& line : vec) {
+        if (std::regex_search(line, wmatches, charNameRegex)) {
             charNames.insert(wmatches[1]);
         }
     }
@@ -178,7 +178,13 @@ int main(int argc, char* argv[]) {
 
     // Read all logs
     std::cout << "Files read:" << std::endl;
-    std::vector<std::wstring> allLines = ReadLogs();
+    std::vector<std::wstring> allLines;
+    try {
+        allLines = ReadLogs(true, std::wregex(cfg.get(L"regex").as_string()));
+    } catch (web::json::json_exception& ex) {
+        std::cout << "ERROR: " << ex.what() << std::endl;
+        return 1;
+    }
     std::cout << "Total of " << allLines.size() << " lines read (excluding metadata)" << std::endl << std::endl;
 
 
