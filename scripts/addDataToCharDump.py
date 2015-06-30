@@ -116,7 +116,7 @@ if (removeCharacters):
     print("Removing characters...")
     cur.executemany(
         '''DELETE FROM `characters`
-        WHERE `ID` = %s;''',
+           WHERE `ID` = %s;''',
         [char[0] for char in removeCharacters])
 
 allData = list()
