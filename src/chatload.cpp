@@ -72,7 +72,7 @@ std::wstring GetHomeDirectory() {
 
 
 // Returns a std::vector<std::wstring> with all lines from all chat logs whose name matches pattern
-std::vector<std::wstring> ReadLogs(bool showReadFiles, std::wregex& pattern) {
+std::vector<std::wstring> ReadLogs(bool showReadFiles, const std::wregex& pattern) {
     std::wstring logDir = GetHomeDirectory() + L"\\Documents\\EVE\\logs\\Chatlogs\\";
     std::wstring filename;
     std::wstring line;
