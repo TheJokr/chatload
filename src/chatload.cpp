@@ -181,8 +181,9 @@ int main(int argc, char* argv[]) {
     std::vector<std::wstring> allLines;
     try {
         allLines = ReadLogs(true, std::wregex(cfg.get(L"regex").as_string()));
-    } catch (web::json::json_exception& ex) {
-        std::cout << "ERROR: " << ex.what() << std::endl;
+    } catch (std::exception& ex) {
+        std::cerr << "ERROR: " << ex.what() << std::endl;
+        std::cerr << "Couldn't read all logs, shutting down" << std::endl;
         return 1;
     }
     std::cout << "Total of " << allLines.size() << " lines read (excluding metadata)" << std::endl << std::endl;
@@ -206,8 +207,9 @@ int main(int argc, char* argv[]) {
                 endpoint.at(L"resource").as_string(),
                 endpoint.at(L"parameter").as_string()));
         }
-    } catch (web::json::json_exception& ex) {
-        std::cout << "ERROR: " << ex.what() << std::endl;
+    } catch (std::exception& ex) {
+        std::cerr << "ERROR: " << ex.what() << std::endl;
+        std::cerr << "Couldn't read all endpoints, shutting down" << std::endl;
         return 1;
     }
     std::cout << " " << httpClients.size() << " connection(s) established" << std::endl << std::endl;

@@ -70,7 +70,7 @@ std::wstring get_file_content(const std::wstring& filename) {
         return content;
     } else {
         in.close();
-        std::cout << "ERROR: Can't read file content" << std::endl;
+        std::cerr << "ERROR: Can't read file content" << std::endl;
         return L"";
     }
 }
@@ -186,7 +186,8 @@ bool config::load(const std::wstring& filename) {
             cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
             return true;
         } catch (std::exception& ex) {
-            std::cout << "ERROR: " << ex.what() << std::endl;
+            std::cerr << "ERROR: " << ex.what() << std::endl;
+            std::cerr << "Loading default configuration" << std::endl;
             cfgObj = chatload::DEFAULTCONFIG;
         }
     } else {
@@ -202,7 +203,7 @@ bool config::save() {
         set_file_content(cfgFilename, prettyJSON(cfgObj.serialize()));
         return true;
     } catch (std::exception& ex) {
-        std::cout << "ERROR: " << ex.what() << std::endl;
+        std::cerr << "ERROR: " << ex.what() << std::endl;
     }
     return false;
 }
@@ -214,7 +215,7 @@ bool config::reload() {
             cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
             return true;
         } catch (std::exception& ex) {
-            std::cout << "ERROR: " << ex.what() << std::endl;
+            std::cerr << "ERROR: " << ex.what() << std::endl;
         }
     } else {
         save();
@@ -236,7 +237,7 @@ web::json::value config::get(const std::wstring& path) {
 
         return val;
     } catch (web::json::json_exception& ex) {
-        std::cout << "ERROR: " << ex.what() << std::endl;
+        std::cerr << "ERROR: " << ex.what() << std::endl;
         return web::json::value();
     }
 }
@@ -254,7 +255,7 @@ bool config::set(const std::wstring& path, web::json::value content) {
         val = content;
         return true;
     } catch (web::json::json_exception& ex) {
-        std::cout << "ERROR: " << ex.what() << std::endl;
+        std::cerr << "ERROR: " << ex.what() << std::endl;
         return false;
     }
 }
