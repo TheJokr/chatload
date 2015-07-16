@@ -61,7 +61,7 @@ std::wstring get_file_content(const std::wstring& filename) {
         std::wstring content;
 
         in.seekg(0, std::wifstream::end);
-        content.resize(in.tellg());
+        content.resize(static_cast<unsigned int>(in.tellg()));
 
         in.seekg(0, std::wifstream::beg);
         in.read(&content[0], content.size());
