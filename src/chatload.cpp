@@ -56,6 +56,7 @@
 // WinAPI
 #include <Windows.h>
 #include <ShlObj.h>
+#include <objbase.h>
 
 
 // Chatload constants
@@ -67,10 +68,12 @@ static const std::string VERSION = "1.4.0";
 
 // Returns a std::wstring with current user's home folder
 std::wstring GetHomeDirectory() {
-    LPWSTR path[MAX_PATH];
+    PWSTR pathptr;
+    SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &pathptr);
 
-    SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, path);
-    return std::wstring(*path);
+    std::wstring path = pathptr;
+    CoTaskMemFree(static_cast<LPVOID>(pathptr));
+    return path;
 }
 
 
