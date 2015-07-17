@@ -39,6 +39,9 @@
 // Threading
 #include <future>
 
+// Exceptions
+#include <exception>
+
 // Utility
 #include <regex>
 #include <chrono>
