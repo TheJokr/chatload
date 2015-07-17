@@ -134,7 +134,7 @@ std::vector<std::wstring> filterNames(const std::vector<std::wstring>& vec) {
      * wmatches[1] = CHARACTER_NAME
      */
     std::wsmatch wmatches;
-    std::wregex charNameRegex(L"\\[[\\d\\.\\s:]{21}\\]\\s([\\w\\s]+)\\s>.*");
+    std::wregex charNameRegex(L"\\[[\\d\\.: ]{21}\\] ([\\w ]+) > .*");
 
     for (const auto& line : vec) {
         if (std::regex_search(line, wmatches, charNameRegex)) {
@@ -167,11 +167,11 @@ int main(int argc, char* argv[]) {
 
     // Version output
     if (argc == 2 && (std::strcmp(argv[1], "-V") == 0 || std::strcmp(argv[1], "--version") == 0)) {
-        std::cout << argv[0] << " " << chatload::VERSION << std::endl;
-        std::cout << "Copyright (C) 2015  Leo Bloecher" << std::endl << std::endl;
-        std::cout << "This program comes with ABSOLUTELY NO WARRANTY." << std::endl;
-        std::cout << "This is free software, and you are welcome to redistribute it under certain conditions.";
-        std::cout << std::endl;
+        std::cout << argv[0] << " " << chatload::VERSION << std::endl
+                  << "Copyright (C) 2015  Leo Bloecher" << std::endl << std::endl
+                  << "This program comes with ABSOLUTELY NO WARRANTY." << std::endl
+                  << "This is free software, and you are welcome to redistribute it under certain conditions."
+                  << std::endl;
         return 0;
     }
 
@@ -224,7 +224,7 @@ int main(int argc, char* argv[]) {
 
 
     // Wait for character names to become available
-    std::cout << "Waiting for character names filter. This might take some time...";
+    std::cout << "Waiting for character names filter...";
     std::future_status charNameStatus = charNameThread.wait_for(std::chrono::seconds(0));
     while (charNameStatus != std::future_status::ready) {
         charNameStatus = charNameThread.wait_for(std::chrono::seconds(1));
