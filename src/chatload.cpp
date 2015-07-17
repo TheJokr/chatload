@@ -232,8 +232,8 @@ int main(int argc, char* argv[]) {
     }
     std::cout << std::endl << std::endl;
 
-    // Retrieve character names
-    std::vector<std::wstring> charNames = charNameThread.get();
+    // Retrieve and concatenate character names
+    std::wstring charNames = joinVec(charNameThread.get(), L",");
 
 
     // POST character names
@@ -242,17 +242,16 @@ int main(int argc, char* argv[]) {
         pplx::task<web::http::http_response> postThread = std::get<0>(client).request(
             web::http::methods::POST,
             std::get<2>(client),
-            std::get<3>(client) + L"=" + joinVec(charNames, L","),
+            std::get<3>(client) + L"=" + charNames,
             L"application/x-www-form-urlencoded");
-
-        postThread.then([=](web::http::http_response response) {
+        postThread.then([&client](web::http::http_response response) {
             if (response.status_code() == web::http::status_codes::OK) {
                 std::wcout << L"Successfully added character names to DB at " << std::get<1>(client) << std::endl;
             } else {
                 std::wcout << L"Failed to add character names to DB at " << std::get<1>(client) << std::endl;
             }
-        });
-        postThread.wait();
+        })
+        .wait();
     }
     std::cout << std::endl;
 
