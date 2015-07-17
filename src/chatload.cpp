@@ -108,7 +108,9 @@ std::vector<std::wstring> ReadLogs(bool showReadFiles, const std::wregex& patter
 
             filestream.close();
             if (showReadFiles) {
-                std::wcout << filename << std::endl;
+                std::wcout << filename << L" ("
+                           << (data.nFileSizeHigh * (static_cast<DWORDLONG>(MAXDWORD) + 1)) + data.nFileSizeLow
+                           << L" bytes)" << std::endl;
             }
         }
     }
