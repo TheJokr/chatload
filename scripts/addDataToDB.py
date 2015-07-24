@@ -20,12 +20,12 @@
 # along with chatload.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Script to add publicly available data to character names
+# Script to add publicly available data to database entries
 import time
 import sys
 import xml.etree.ElementTree as ET
-import requests
 
+import requests
 import mysql.connector
 
 
@@ -35,7 +35,7 @@ def split_list(inputList, wanted_parts=1):
             for i in range(wanted_parts)]
 
 
-# Request characters (existing ones (>1 month since last update) and new ones)
+# Request characters
 conn = mysql.connector.connect(
     host="localhost",
     user="chatloadDump",
@@ -51,9 +51,17 @@ cur.execute(
          OR `characterID` IS NULL;''')
 res = cur.fetchall()
 
-if (not res):
+if not res:
     print("Everything is up-to-date!")
     sys.exit(0)
+
+
+# Reset timestamps of to-be-processed characters
+cur.executemany(
+    '''UPDATE `characters`
+       SET `lastModified` = NOW();
+       WHERE `ID` = %s''',
+    [char[0] for char in res])
 
 
 # Convert tuples to lists
@@ -62,7 +70,7 @@ for row in res:
     allData.append(list(row))
 
 # Divide output into lists of 200 chars
-parts = split_list(allData, (len(allData)//200)+1)
+parts = split_list(allData, (len(allData) // 200) + 1)
 
 
 # Add API data
@@ -70,32 +78,32 @@ removeCharacters = list()
 for charList in parts:
     r = requests.post(
         "https://api.eveonline.com/eve/CharacterID.xml.aspx",
-        data={"names": ",".join([char[2] for char in charList])},
-        headers={"User-Agent": "chatload Scraper"},
+        data={'names': ','.join([char[2] for char in charList])},
+        headers={'User-Agent': "chatload Scraper"},
         timeout=5)
-    if (r.status_code != 200):
+    if r.status_code != 200:
         print("Execution of POST request failed!")
         continue
-    # Replace Unicode replacement character with a ? to stop exceptions
+    # Replace unicode replacement character with ?
     xml = ET.fromstring(r.text.replace(u"\uFFFD", u"?"))
     for char in charList:
         row = xml[1][0].find(".//*[@name='{}']".format(char[2]))
-        if (row is not None and row.attrib['characterID'] != '0'):
+        if row is not None and row.attrib['characterID'] != '0':
             char[1] = int(row.attrib["characterID"])
         else:
             # Invalid character name
             removeCharacters.append(char)
             print("INVALID CHARACTER NAME: {} - Removed!".format(char[2]))
-    charList = [char for char in charList if char[1] != None]
+    charList = [char for char in charList if char[1] is not None]
     r = requests.post(
-        "https://api.eveonline.com"
-        "/eve/CharacterAffiliation.xml.aspx",
-        data={"ids": ",".join([str(char[1]) for char in charList])},
-        headers={"User-Agent": "CharacterDB Scraper"},
+        "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx",
+        data={'ids': ','.join(map(str, [char[1] for char in charList]))},
+        headers={'User-Agent': "chatload Scraper"},
         timeout=10)
-    if (r.status_code != 200):
+    if r.status_code != 200:
         print("Execution of POST request failed!")
-    # Replace Unicode replacement character with a ? to stop exceptions
+        continue
+    # Replace unicode replacement character with ?
     xml = ET.fromstring(r.text.replace(u"\uFFFD", "?"))
     for char in charList:
         row = xml[1][0].find(".//*[@characterID='{}']".format(char[1]))
@@ -112,7 +120,7 @@ for charList in parts:
 # Update DB
 print("Updating database")
 
-if (removeCharacters):
+if removeCharacters:
     print("Removing characters...")
     cur.executemany(
         '''DELETE FROM `characters`
@@ -123,24 +131,27 @@ allData = list()
 for part in parts:
     allData += part
 
-if (allData):
+if allData:
     print("Updating characters...")
     for char in allData:
         cur.execute(
             '''UPDATE `characters`
                SET `characterID` = %(charID)s,
-               `corporationID` = %(corpID)s, `corporationName` = %(corpName)s,
-               `allianceID` = %(allyID)s, `allianceName` = %(allyName)s,
-               `factionID` = %(facID)s, `factionName` = %(facName)s
+                 `corporationID` = %(corpID)s,
+                 `corporationName` = %(corpName)s,
+                 `allianceID` = %(allyID)s,
+                 `allianceName` = %(allyName)s,
+                 `factionID` = %(facID)s,
+                 `factionName` = %(facName)s
                WHERE `ID` = %(id)s;''',
-            {"id": char[0],
-             "charID": char[1],
-             "corpID": char[3],
-             "corpName": char[4],
-             "allyID": (char[5] if char[5] != 0 else None),
-             "allyName": (char[6] if char[6] != '' else None),
-             "facID": (char[7] if char[7] != 0 else None),
-             "facName": (char[8] if char[8] != '' else None)})
+            {'id': char[0],
+             'charID': char[1],
+             'corpID': char[3],
+             'corpName': char[4],
+             'allyID': char[5] if char[5] != 0 else None,
+             'allyName': char[6] if char[6] != '' else None,
+             'facID': char[7] if char[7] != 0 else None,
+             'facName': char[8] if char[8] != '' else None})
 
 conn.commit()
 conn.close()
