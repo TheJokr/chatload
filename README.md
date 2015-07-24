@@ -5,12 +5,11 @@ chatload is a Windows console application written in C++ and created to collect 
 You can either download the [latest binary release](https://github.com/TheJokr/chatload/releases/latest) to contribute to any existing database or build it yourself (including your own database).
 
 ## Binary release
-After downloading and unzipping the [latest release](https://github.com/TheJokr/chatload/releases/latest), run `chatload.exe` to upload all character names found in all your log files to the public database.  
+After downloading and unzipping the [latest release](https://github.com/TheJokr/chatload/releases/latest), run `chatload.exe` to upload all character names found in all your log files to the public database. In order to change the endpoint(s), see [Configuration](#configuration).  
 The application is distributed as a standalone program, all required binaries are included in the release.  
-In order to change the endpoint, see [Configuration](#configuration).  
 No log data is uploaded, just the scraped character names.
 
-### Configuration
+## Configuration
 `config.json` is used to determine which endpoint to use.
 If the file is not present upon execution, a new one will be generated using the default settings.
 In order to use (a) custom endpoint(s), change the default values.  
@@ -52,21 +51,21 @@ In order to use (a) custom endpoint(s), change the default values.
     - [MySQL driver](http://php.net/manual/en/ref.pdo-mysql.php)
 
 ### Building
-1. Replace `SQL_USER_PASSWORD` in `sql/chatload_db.sql`, `scripts/addDataToCharDump.py`,  `scripts/charDump.php` and `scripts/basicServer.py` with a password
-2. Log into your MySQL server and execute `sql/chatload_db.sql` to create a database and a user for chatload
+1. Replace `SQL_USER_PASSWORD` in `sql/schema.sql`, `scripts/addDataToDB.py`,  `scripts/charDump.php` and `scripts/basicServer.py` with a password
+2. Log into your MySQL server and execute `sql/schema.sql` to create a database and a user for chatload
 3. Run `python scripts/basicServer.py [PORT] [HOST]` in the background or make sure `scripts/charDump.php` is available via POST request
 4. Build chatload.exe
 5. Distribute and execute the compiled binary to add data to your database
   - Make sure to include a `config.json` file with your custom settings
-6. Execute `python scripts/addDataToCharDump.py` to add corporation, alliance and faction details to the character names
+6. Execute `python scripts/addDataToDB.py` to add corporation, alliance and faction details to the character names
 
-*Note*: You have to run `3to2` when using `scripts/basicServer.py` or `scripts/addDataToCharDump.py` with Python &ge; 3.0
+*Note*: You have to run `3to2` when using `scripts/basicServer.py` or `scripts/addDataToDB.py` with Python &ge; 3.0
 
 # Usage
 `chatload.exe` to upload all character names to the public database (default) or the specified POST endpoint (custom configuration file).  
 `chatload.exe --version` to show version and license information.  
 `python scripts/basicServer.py [PORT] [HOST]` to run a basic web server which will add character names to your database.  
-`python scripts/addDataToCharDump.py` to add all publicly available data to your database.
+`python scripts/addDataToDB.py` to add all publicly available data to your database.
 
 # Credits
 chatload is released under the GNU General Public License, version 3. The full license is available in the `COPYING` file.  

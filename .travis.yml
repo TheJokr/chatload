@@ -15,12 +15,11 @@ install:
     - pip install pep8
 
 before_script:
-    - mysql -uroot < sql/chatload_db.sql
     - wget https://google-styleguide.googlecode.com/svn/trunk/cpplint/cpplint.py
+    - mysql -uroot < sql/schema.sql
 
 script:
     - php -l scripts/charDump.php
-    - pep8 scripts/addDataToCharDump.py
+    - pep8 scripts/addDataToDB.py
     - pep8 scripts/basicServer.py
     - python cpplint.py --linelength=120 --extensions=hpp,cpp --filter=-build/c++11,-build/include_order src/*
-
