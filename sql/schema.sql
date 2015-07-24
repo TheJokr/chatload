@@ -19,15 +19,15 @@
  */
 
 
--- MySQL script to create chatload user and database
-CREATE DATABASE IF NOT EXISTS `chatloadDump` DEFAULT CHARSET = utf8;
+-- MySQL schema for chatload database
+CREATE DATABASE IF NOT EXISTS `chatloadDump` DEFAULT CHARSET=utf8;
 
 GRANT ALL ON `chatloadDump`.* TO 'chatloadDump'@'localhost' IDENTIFIED BY 'SQL_USER_PASSWORD';
 FLUSH PRIVILEGES;
 
 
 CREATE TABLE IF NOT EXISTS `chatloadDump`.`characters` (
-    `ID` int NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    `ID` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     `characterID` INT DEFAULT NULL UNIQUE,
     `characterName` VARCHAR(255) NOT NULL UNIQUE,
     `corporationID` INT DEFAULT NULL,
@@ -37,4 +37,4 @@ CREATE TABLE IF NOT EXISTS `chatloadDump`.`characters` (
     `factionID` INT DEFAULT NULL,
     `factionName` VARCHAR(255) DEFAULT NULL,
     `lastModified` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) DEFAULT CHARSET=utf8 COMMENT='DB to save chatload.exe uploads';
+) DEFAULT CHARSET=utf8 COMMENT='Chatload character database';
