@@ -21,21 +21,22 @@
 
 
 // Script to serve chatload uploads
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['name'])) {
-    $names = explode(",", $_POST['name']);
+if ($_SERVER['REQUEST_METHOD'] === "POST" && isset($_POST['name']) && !empty($_POST['name'])) {
     try {
-        $dbh = new PDO('mysql:host=localhost;dbname=chatloadDump;charset=utf8', 'chatloadDump', 'SQL_USER_PASSWORD');
+        $dbh = new PDO("mysql:host=localhost;dbname=chatloadDump;charset=utf8", "chatloadDump", "SQL_USER_PASSWORD");
     } catch (PDOException $e) {
-        exit("Connection failed: ".$e->getMessage());
+        http_response_code(503);
+        error_log("DB connection failed: ".$e->getMessage());
+        exit();
     }
+    $names = explode(',', $_POST['name']);
     $dbh->beginTransaction();
     $stmt = $dbh->prepare("INSERT IGNORE INTO `characters` (`characterName`) VALUES (:charName);");
-    foreach($names as $name) {
-        $stmt->execute(array("charName" => $name));
-        echo $name.": OK".PHP_EOL;
+    foreach($names as $char) {
+        $stmt->execute(array("charName" => $char));
     }
     $dbh->commit();
 } else {
-    echo "Invalid request";
+    http_response_code(400);
 }
 ?>

@@ -20,7 +20,7 @@
 # along with chatload.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Script with a simple webserver to serve chatload uploads
+# Script to serve chatload uploads without a dedicated webserver
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from cgi import FieldStorage
 from sys import argv
@@ -28,15 +28,13 @@ from sys import argv
 import mysql.connector
 
 
-if (len(argv) > 2):
-    HOST = argv[1]
-    PORT = int(argv[2])
-elif (len(argv) > 1):
-    HOST = ""
+HOST = ""
+PORT = 8080
+if len(argv) == 2:
     PORT = int(argv[1])
-else:
-    HOST = ""
-    PORT = 8080
+elif len(argv) >= 3:
+    HOST = str(argv[1])
+    PORT = int(argv[2])
 
 
 conn = mysql.connector.connect(
@@ -48,28 +46,35 @@ conn = mysql.connector.connect(
 cur = conn.cursor()
 
 
-class SrvHandler(BaseHTTPRequestHandler):
+class ReqHandler(BaseHTTPRequestHandler):
     def do_POST(self):
-        self.send_header("Content-type", "text/plain")
-        self.send_response(200)
-        self.end_headers()
         form = FieldStorage(
             fp=self.rfile,
             headers=self.headers,
-            environ={'REQUEST_METHOD': 'POST',
+            environ={'REQUEST_METHOD': "POST",
                      'CONTENT_TYPE': self.headers['Content-Type']})
-        names = form.getvalue('name').split(",")
+        names = form.getvalue("name", "").split(',')
+        if not any(names):
+            self.send_response(400)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+            return
         for char in names:
             cur.execute(
                 '''INSERT IGNORE INTO `characters` (`characterName`)
-                   VALUES (%s);''',
-                [str(char)])
-            self.wfile.write(str(char) + ": OK\n")
+                   VALUES (%(charName)s);''',
+                {'charName': char})
         conn.commit()
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
 
 
 print("Server is starting up...")
-httpd = HTTPServer((HOST, PORT), SrvHandler)
+httpd = HTTPServer((HOST, PORT), ReqHandler)
 print("Serving at http://{}:{}".format((HOST or "localhost"), PORT))
 
-httpd.serve_forever()
+try:
+    httpd.serve_forever()
+except KeyboardInterrupt:
+    print("Server is shutting down...")
