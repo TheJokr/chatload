@@ -1,4 +1,10 @@
 # Changelog
+## 1.5.0
+- Improved upload performance
+- Improved exception handling
+- Added filesize in bytes to application output
+- Various bugfixes
+
 ## 1.4.0
 - Added Travis CI
 - Added support for multiple POST endpoints
