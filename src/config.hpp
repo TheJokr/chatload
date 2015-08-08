@@ -40,6 +40,7 @@ class config {
 
  public:
     explicit config(const std::wstring& filename);
+    virtual ~config() = default;
     bool load(const std::wstring& filename);
     bool save();
     bool reload();

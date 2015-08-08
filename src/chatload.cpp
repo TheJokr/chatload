@@ -98,7 +98,7 @@ std::vector<std::wstring> ReadLogs(bool showReadFiles, const std::wregex& patter
             // EVE Online logs are UCS-2 (LE) encoded
             std::wifstream filestream(logDir + filename, std::ios::binary);
             filestream.imbue(std::locale(
-                filestream.getloc(), new std::codecvt_utf16<wchar_t, 0xffff, std::consume_header>));
+                filestream.getloc(), new std::codecvt_utf16<wchar_t, 0xFFFF, std::consume_header>));
 
             // Ignore first 12 lines (metadata)
             for (int iter = 0; iter < 12; iter++) {
@@ -109,7 +109,6 @@ std::vector<std::wstring> ReadLogs(bool showReadFiles, const std::wregex& patter
                 lines.push_back(line);
             }
 
-            filestream.close();
             if (showReadFiles) {
                 std::wcout << filename << L" ("
                            << (data.nFileSizeHigh * (static_cast<DWORDLONG>(MAXDWORD) + 1)) + data.nFileSizeLow
@@ -129,7 +128,7 @@ std::vector<std::wstring> filterNames(const std::vector<std::wstring>& vec) {
 
     /*
      * Matches character names using wexp
-     * Format: [ YYYY.MM.DD H:m:s ] CHARACTER_NAME > TEXT
+     * Format: [ YYYY.MM.DD HH:mm:ss ] CHARACTER_NAME > TEXT
      * wmatches[0] = full string
      * wmatches[1] = CHARACTER_NAME
      */
@@ -152,8 +151,8 @@ std::wstring joinVec(const std::vector<std::wstring>& vec, const std::wstring& s
     wss << vec[0];
 
     for (auto iter = std::next(vec.begin()); iter != vec.end(); iter++) {
-        wss << sep;
-        wss << *iter;
+        wss << sep
+            << *iter;
     }
 
     return wss.str();
@@ -180,8 +179,8 @@ int main(int argc, char* argv[]) {
     chatload::config cfg(L"config.json");
 
 
-    std::cout << "This app scrapes your EVE Online chat logs for character names and adds them to a database";
-    std::cout << std::endl << std::endl;
+    std::cout << "This app scrapes your EVE Online chat logs for character names and adds them to a database"
+              << std::endl << std::endl;
 
 
     // Read all logs
@@ -190,8 +189,8 @@ int main(int argc, char* argv[]) {
     try {
         allLines = ReadLogs(true, std::wregex(cfg.get(L"regex").as_string()));
     } catch (std::exception& ex) {
-        std::cerr << "ERROR: " << ex.what() << std::endl;
-        std::cerr << "Couldn't read all logs, shutting down" << std::endl;
+        std::cerr << "ERROR: " << ex.what() << std::endl
+                  << "Couldn't read all logs, shutting down" << std::endl;
         return 1;
     }
     std::cout << "Total of " << allLines.size() << " lines read (excluding metadata)" << std::endl << std::endl;
@@ -204,7 +203,7 @@ int main(int argc, char* argv[]) {
 
     // Create Casablanca client(s)
     // httpClients = std::vector<std::tuple<CLIENT, HOST, RESOURCE, PARAMETER>>
-    std::cout << "Establishing connection(s)...";
+    std::cout << "Establishing connection(s)... ";
     std::vector<std::tuple<web::http::client::http_client, std::wstring, std::wstring, std::wstring>> httpClients;
     try {
         web::json::array POSTEndpoints = cfg.get(L"POST").as_array();
@@ -216,11 +215,11 @@ int main(int argc, char* argv[]) {
                 endpoint.at(L"parameter").as_string()));
         }
     } catch (std::exception& ex) {
-        std::cerr << "ERROR: " << ex.what() << std::endl;
-        std::cerr << "Couldn't read all endpoints, shutting down" << std::endl;
+        std::cerr << "ERROR: " << ex.what() << std::endl
+                  << "Couldn't read all endpoints, shutting down" << std::endl;
         return 1;
     }
-    std::cout << " " << httpClients.size() << " connection(s) established" << std::endl << std::endl;
+    std::cout << httpClients.size() << " connection(s) established" << std::endl << std::endl;
 
 
     // Wait for character names to become available
