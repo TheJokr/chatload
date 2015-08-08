@@ -35,21 +35,14 @@
 // Casablanca (JSON)
 #include <cpprest\json.h>
 
-// chatload::config forward declaration
+// Forward declaration
 #include "config.hpp"
 
 
-// Returns true if filename exists, false otherwise
+// Returns true if filename exists or false otherwise
 inline bool fileExists(const std::wstring& filename) {
     std::wifstream in(filename);
-
-    if (in.good()) {
-        in.close();
-        return true;
-    } else {
-        in.close();
-        return false;
-    }
+    return in.good();
 }
 
 
@@ -59,41 +52,34 @@ std::wstring get_file_content(const std::wstring& filename) {
 
     if (in.good()) {
         std::wstring content;
-
         in.seekg(0, std::wifstream::end);
         content.resize(static_cast<std::wstring::size_type>(in.tellg()));
-
         in.seekg(0, std::wifstream::beg);
         in.read(&content[0], content.size());
-
-        in.close();
         return content;
     } else {
-        in.close();
         std::cerr << "ERROR: Can't read file content" << std::endl;
-        return L"";
+        return std::wstring();
     }
 }
 
 
-// Returns true after writing content to filename, false otherwise
+// Returns true after writing content to filename or false if it fails
 bool set_file_content(const std::wstring& filename, const std::wstring& content) {
     std::wofstream out(filename, std::wofstream::out | std::wofstream::trunc);
 
     if (out.good()) {
         out << content;
-
-        out.close();
         return true;
     } else {
-        out.close();
+        std::cerr << "ERROR: Can't write content to file" << std::endl;
         return false;
     }
 }
 
 
 // Returns a std::vector with parts of input splitted at delim
-std::vector<std::wstring> splitString(const std::wstring& input, const wchar_t& delim) {
+std::vector<std::wstring> splitString(const std::wstring& input, const std::wstring::value_type& delim) {
     std::wstringstream wss(input);
     std::wstring content;
     std::vector<std::wstring> parts;
@@ -109,7 +95,7 @@ std::vector<std::wstring> splitString(const std::wstring& input, const wchar_t& 
 // Returns a std::wstring with pretty output from input (serialized JSON document)
 std::wstring prettyJSON(std::wstring input) {
     bool isString = false;
-    for (unsigned int iter = 0; iter < input.length(); iter++) {
+    for (std::wstring::size_type iter = 0; iter < input.length(); iter++) {
         // Beginning/end of string within JSON document
         if (input[iter] == L'"' && (iter == 0 || input[iter - 1] != L'\\')) {
             isString = !isString;
@@ -119,26 +105,20 @@ std::wstring prettyJSON(std::wstring input) {
         }
 
         // EOL after opening/closing brackets and commas
+        // Space after colons
         if (input[iter] == L'[' || input[iter] == L'{' || input[iter] == L',') {
-            input.insert(iter + 1, L"\n");
-            continue;
+            input.insert(++iter, L"\n");
         } else if (input[iter] == L']' || input[iter] == L'}') {
-            input.insert(iter, L"\n");
-            iter++;
-            continue;
-        }
-
-        // Space after colon
-        if (input[iter] == L':') {
-            input.insert(iter + 1, L" ");
-            continue;
+            input.insert(iter++, L"\n");
+        } else if (input[iter] == L':') {
+            input.insert(++iter, L" ");
         }
     }
 
     // Indentation (4 spaces)
     isString = false;
     unsigned int indentLevel = 0;
-    for (unsigned int iter = 0; iter < input.length(); iter++) {
+    for (std::wstring::size_type iter = 0; iter < input.length(); iter++) {
         // Beginning/end of string within JSON document
         if (input[iter] == L'"' && (iter == 0 || input[iter - 1] != L'\\')) {
             isString = !isString;
@@ -150,14 +130,15 @@ std::wstring prettyJSON(std::wstring input) {
         // Add/remove indent level after opening/closing brackets
         if (input[iter] == L'[' || input[iter] == L'{') {
             indentLevel++;
-        } else if (input[iter + 1] == L']' || input[iter + 1] == L'}') {
-            indentLevel = (indentLevel == 0 ? 0 : indentLevel - 1);
+        }
+        if (input[iter + 1] == L']' || input[iter + 1] == L'}') {
+            indentLevel -= (indentLevel == 0 ? 0 : 1);
         }
 
         if (input[iter] == L'\n') {
             for (unsigned int indentIter = 0; indentIter < indentLevel; indentIter++) {
                 input.insert(iter + 1, L"    ");
-                iter = iter + 4;
+                iter += 4;
             }
         }
     }
@@ -177,7 +158,7 @@ config::config(const std::wstring& filename) {
     load(filename);
 }
 
-// Returns true after loading filename as new configuration or false when the default configuration is used
+// Returns true after loading filename as new configuration or false if the default configuration is used
 bool config::load(const std::wstring& filename) {
     cfgFilename = filename;
 
@@ -197,7 +178,7 @@ bool config::load(const std::wstring& filename) {
     return false;
 }
 
-// Returns true after saving the current configuration to cfgFilename
+// Returns true after saving the current configuration to cfgFilename or false if it fails
 bool config::save() {
     try {
         set_file_content(cfgFilename, prettyJSON(cfgObj.serialize()));
@@ -208,7 +189,7 @@ bool config::save() {
     return false;
 }
 
-// Returns true after reloading the configuration from cfgFilename or false when the default configuration is used
+// Returns true after reloading the configuration from cfgFilename or false if it fails
 bool config::reload() {
     if (fileExists(cfgFilename)) {
         try {
@@ -242,7 +223,7 @@ web::json::value config::get(const std::wstring& path) {
     }
 }
 
-// Returns true after setting path to content or false if it fails
+// Returns true after setting content at path or false if it fails
 bool config::set(const std::wstring& path, web::json::value content) {
     std::vector<std::wstring> objPath = splitString(path, L'/');
 
