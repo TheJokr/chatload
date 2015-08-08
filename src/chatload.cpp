@@ -66,10 +66,10 @@ static const std::string VERSION = "1.4.0";
 }
 
 
-// Returns a std::wstring with current user's home folder
-std::wstring GetHomeDirectory() {
+// Returns a std::wstring with current user's Documents folder
+std::wstring GetDocumentsFolder() {
     PWSTR pathptr;
-    SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &pathptr);
+    SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &pathptr);
 
     std::wstring path = pathptr;
     CoTaskMemFree(static_cast<LPVOID>(pathptr));
@@ -79,7 +79,7 @@ std::wstring GetHomeDirectory() {
 
 // Returns a std::vector<std::wstring> with all lines from all chat logs whose name matches pattern
 std::vector<std::wstring> ReadLogs(bool showReadFiles, const std::wregex& pattern) {
-    std::wstring logDir = GetHomeDirectory() + L"\\Documents\\EVE\\logs\\Chatlogs\\";
+    std::wstring logDir = GetDocumentsFolder() + L"\\EVE\\logs\\Chatlogs\\";
     std::wstring filename;
     std::wstring line;
     std::vector<std::wstring> lines;
