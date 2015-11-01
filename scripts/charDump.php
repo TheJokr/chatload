@@ -30,12 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] === "POST" && isset($_POST['name']) && !empty($_P
         exit();
     }
     $names = explode(',', $_POST['name']);
+
     $dbh->beginTransaction();
     $stmt = $dbh->prepare("INSERT IGNORE INTO `characters` (`characterName`) VALUES (:charName);");
     foreach($names as $char) {
         $stmt->execute(array("charName" => $char));
     }
     $dbh->commit();
+} else if ($_SERVER['REQUEST_METHOD'] !== "POST") {
+    http_response_code(405);
 } else {
     http_response_code(400);
 }
