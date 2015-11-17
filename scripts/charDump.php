@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === "POST" && isset($_POST['name']) && !empty($_P
 
     $dbh->beginTransaction();
     $stmt = $dbh->prepare("INSERT IGNORE INTO `characters` (`characterName`) VALUES (:charName);");
-    foreach($names as $char) {
+    foreach ($names as $char) {
         $stmt->execute(array("charName" => $char));
     }
     $dbh->commit();

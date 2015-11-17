@@ -21,18 +21,15 @@
 
 
 # Script to add publicly available data to database entries
+from __future__ import division
+
+import math
 import time
 import sys
 import xml.etree.ElementTree as ET
 
 import requests
 import mysql.connector
-
-
-def split_list(inputList, wanted_parts=1):
-    length = len(inputList)
-    return [inputList[i*length // wanted_parts: (i+1)*length // wanted_parts]
-            for i in range(wanted_parts)]
 
 
 # Request characters
@@ -56,6 +53,9 @@ if not res:
     sys.exit(0)
 
 
+# Convert tuples to lists
+allData = [list(row) for row in res]
+
 # Reset timestamps of to-be-processed characters
 cur.executemany(
     '''UPDATE `characters`
@@ -63,18 +63,13 @@ cur.executemany(
        WHERE `ID` = %s''',
     [(char[0], ) for char in res])
 
-
-# Convert tuples to lists
-allData = list()
-for row in res:
-    allData.append(list(row))
-
-# Divide output into lists of 200 chars
-parts = split_list(allData, (len(allData) // 200) + 1)
+# Divide output into lists of 200 characters each
+parts = [allData[i*200: (i+1)*200] for i
+         in range(int(math.ceil(len(allData) / 200)))]
 
 
 # Add API data
-removeCharacters = list()
+delCharacters = []
 for charList in parts:
     r = requests.post(
         "https://api.eveonline.com/eve/CharacterID.xml.aspx",
@@ -84,17 +79,19 @@ for charList in parts:
     if r.status_code != 200:
         print("Execution of POST request failed!")
         continue
-    # Replace unicode replacement character with ?
-    xml = ET.fromstring(r.text.replace(u"\uFFFD", u"?"))
+    xml = ET.fromstring(r.content)
+
     for char in charList:
         row = xml[1][0].find(".//*[@name='{}']".format(char[2]))
         if row is not None and row.attrib['characterID'] != '0':
             char[1] = int(row.attrib["characterID"])
         else:
             # Invalid character name
-            removeCharacters.append(char)
-            print("INVALID CHARACTER NAME: {} - Removed!".format(char[2]))
+            delCharacters.append(char)
+            print("INVALID CHARACTER NAME: {} - Pending removal!".format(
+                char[2]))
     charList = [char for char in charList if char[1] is not None]
+
     r = requests.post(
         "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx",
         data={'ids': ','.join(map(str, [char[1] for char in charList]))},
@@ -103,8 +100,8 @@ for charList in parts:
     if r.status_code != 200:
         print("Execution of POST request failed!")
         continue
-    # Replace unicode replacement character with ?
-    xml = ET.fromstring(r.text.replace(u"\uFFFD", "?"))
+    xml = ET.fromstring(r.content)
+
     for char in charList:
         row = xml[1][0].find(".//*[@characterID='{}']".format(char[1]))
         char[3] = int(row.attrib['corporationID'])
@@ -113,21 +110,22 @@ for charList in parts:
         char[6] = str(row.attrib['allianceName'])
         char[7] = int(row.attrib['factionID'])
         char[8] = str(row.attrib['factionName'])
-    # Sleep for .5 seconds to lower API load
-    time.sleep(0.5)
+
+    # Sleep for .25 seconds to lower API load
+    time.sleep(0.25)
 
 
 # Update DB
 print("Updating database")
 
-if removeCharacters:
-    print("Removing characters...")
+if delCharacters:
+    print("Removing marked characters...")
     cur.executemany(
         '''DELETE FROM `characters`
            WHERE `ID` = %s;''',
-        [(char[0], ) for char in removeCharacters])
+        [(char[0], ) for char in delCharacters])
 
-allData = list()
+allData = []
 for part in parts:
     allData += part
 

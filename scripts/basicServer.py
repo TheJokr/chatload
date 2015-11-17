@@ -22,7 +22,7 @@
 
 # Script to serve chatload uploads without a dedicated webserver
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from cgi import FieldStorage
+import cgi
 from sys import argv
 
 import mysql.connector
@@ -37,6 +37,7 @@ elif len(argv) >= 3:
     PORT = int(argv[2])
 
 
+# Connect to db
 conn = mysql.connector.connect(
     host="localhost",
     user="chatloadDump",
@@ -48,23 +49,26 @@ cur = conn.cursor()
 
 class ReqHandler(BaseHTTPRequestHandler):
     def do_POST(self):
-        form = FieldStorage(
+        form = cgi.FieldStorage(
             fp=self.rfile,
             headers=self.headers,
             environ={'REQUEST_METHOD': "POST",
                      'CONTENT_TYPE': self.headers['Content-Type']})
         names = form.getvalue("name", "").split(',')
+
         if not any(names):
             self.send_response(400)
             self.send_header("Content-type", "text/plain")
             self.end_headers()
             return
+
         for char in names:
             cur.execute(
                 '''INSERT IGNORE INTO `characters` (`characterName`)
                    VALUES (%(charName)s);''',
                 {'charName': char})
         conn.commit()
+
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
@@ -78,3 +82,4 @@ try:
     httpd.serve_forever()
 except KeyboardInterrupt:
     print("Server is shutting down...")
+    httpd.server_close()

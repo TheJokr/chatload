@@ -18,6 +18,5 @@ before_script:
 
 script:
     - php -l scripts/charDump.php
-    - pep8 scripts/addDataToDB.py
-    - pep8 scripts/basicServer.py
+    - pep8 scripts/
     - python cpplint.py --linelength=120 --extensions=hpp,cpp --filter=-build/c++11,-build/include_order src/*
