@@ -18,36 +18,43 @@
  * along with chatload-client.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Header guard
-#pragma once
-#ifndef CHATLOAD_CONFIG_H
-#define CHATLOAD_CONFIG_H
+// Forward declaration
+#include "filecache.hpp"
 
+// Streams
+#include <fstream>
 
 // Containers
 #include <string>
 
-// C++ REST SDK (JSON)
-#include <cpprest/json.h>
-
-namespace chatload {
-class config {
-private:
-    std::wstring storage_path;
-
-protected:
-    web::json::value storage;
-
-public:
-    explicit config(const std::wstring& file);
-    virtual ~config() = default;
-    bool load(const std::wstring& file);
-    bool save();
-    bool reload();
-    virtual web::json::value get(const std::wstring& path);
-    virtual bool set(const std::wstring& path, web::json::value content);
-};
-}  // namespace chatload
+// Utility
+#include <utility>
+#include <limits>
 
 
-#endif  // CHATLOAD_CONFIG_H
+bool chatload::file_cache::save_to_file(const chatload::file_cache::type& cache, const std::wstring& file) {
+    std::wofstream out(file, std::fstream::trunc);
+    if (!out) { return false; }
+
+    for (const auto& val : cache) {
+        out << val.first << L'\t' << val.second << L'\n';
+    }
+
+    return true;
+}
+
+chatload::file_cache::type chatload::file_cache::load_from_file(const std::wstring& file) {
+    chatload::file_cache::type cache;
+    std::wifstream in(file);
+
+    std::wstring f;
+    unsigned long long wt;
+    while (std::getline(in, f, L'\t')) {
+        in >> wt;
+        in.ignore(std::numeric_limits<std::streamsize>::max(), L'\n');
+
+        cache.emplace(std::move(f), wt);
+    }
+
+    return cache;
+}

@@ -20,34 +20,40 @@
 
 // Header guard
 #pragma once
-#ifndef CHATLOAD_CONFIG_H
-#define CHATLOAD_CONFIG_H
+#ifndef CHATLOAD_READER_H
+#define CHATLOAD_READER_H
 
 
 // Containers
 #include <string>
 
-// C++ REST SDK (JSON)
-#include <cpprest/json.h>
+// Utility
+#include <functional>
+#include <chrono>
+#include <regex>
+
+// wait-free queue
+#include "readerwriterqueue/readerwriterqueue.h"
+
+// chatload components
+#include "cli.hpp"
+#include "os.hpp"
 
 namespace chatload {
-class config {
-private:
-    std::wstring storage_path;
+namespace reader {
+bool readUTF16LE(const std::wstring& path, std::wstring& buffer);
 
-protected:
-    web::json::value storage;
-
-public:
-    explicit config(const std::wstring& file);
-    virtual ~config() = default;
-    bool load(const std::wstring& file);
-    bool save();
-    bool reload();
-    virtual web::json::value get(const std::wstring& path);
-    virtual bool set(const std::wstring& path, web::json::value content);
+struct read_stat {
+    unsigned long long files_read = 0;
+    unsigned long long bytes_read = 0;
+    std::chrono::seconds duration;
 };
+
+read_stat readLogs(chatload::cli::options& args, const std::wregex& pattern,
+                   moodycamel::ReaderWriterQueue<std::wstring>& queue,
+                   std::function<void(chatload::os::dir_entry&)> file_cb = {});
+}  // namespace reader
 }  // namespace chatload
 
 
-#endif  // CHATLOAD_CONFIG_H
+#endif  // CHATLOAD_READER_H

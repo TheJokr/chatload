@@ -20,34 +20,25 @@
 
 // Header guard
 #pragma once
-#ifndef CHATLOAD_CONFIG_H
-#define CHATLOAD_CONFIG_H
+#ifndef CHATLOAD_NETWORK_H
+#define CHATLOAD_NETWORK_H
 
 
 // Containers
 #include <string>
+#include <vector>
+#include <unordered_set>
 
-// C++ REST SDK (JSON)
+// C++ REST SDK (PPLX, JSON)
+#include <pplx/pplxtasks.h>
 #include <cpprest/json.h>
 
 namespace chatload {
-class config {
-private:
-    std::wstring storage_path;
-
-protected:
-    web::json::value storage;
-
-public:
-    explicit config(const std::wstring& file);
-    virtual ~config() = default;
-    bool load(const std::wstring& file);
-    bool save();
-    bool reload();
-    virtual web::json::value get(const std::wstring& path);
-    virtual bool set(const std::wstring& path, web::json::value content);
-};
+namespace network {
+std::vector<pplx::task<void>> sendNames(const web::json::array& endpoints,
+                                        const std::unordered_set<std::wstring>& names);
+}  // namespace network
 }  // namespace chatload
 
 
-#endif  // CHATLOAD_CONFIG_H
+#endif  // CHATLOAD_NETWORK_H

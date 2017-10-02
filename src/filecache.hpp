@@ -20,34 +20,21 @@
 
 // Header guard
 #pragma once
-#ifndef CHATLOAD_CONFIG_H
-#define CHATLOAD_CONFIG_H
+#ifndef CHATLOAD_FILECACHE_H
+#define CHATLOAD_FILECACHE_H
 
 
 // Containers
 #include <string>
-
-// C++ REST SDK (JSON)
-#include <cpprest/json.h>
+#include <unordered_map>
 
 namespace chatload {
-class config {
-private:
-    std::wstring storage_path;
-
-protected:
-    web::json::value storage;
-
-public:
-    explicit config(const std::wstring& file);
-    virtual ~config() = default;
-    bool load(const std::wstring& file);
-    bool save();
-    bool reload();
-    virtual web::json::value get(const std::wstring& path);
-    virtual bool set(const std::wstring& path, web::json::value content);
-};
+namespace file_cache {
+typedef std::unordered_map<std::wstring, unsigned long long> type;
+bool save_to_file(const type& cache, const std::wstring& file);
+type load_from_file(const std::wstring& file);
+}  // namespace file_cache
 }  // namespace chatload
 
 
-#endif  // CHATLOAD_CONFIG_H
+#endif  // CHATLOAD_FILECACHE_H

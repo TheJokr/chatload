@@ -20,34 +20,30 @@
 
 // Header guard
 #pragma once
-#ifndef CHATLOAD_CONFIG_H
-#define CHATLOAD_CONFIG_H
+#ifndef CHATLOAD_EXCEPTION_H
+#define CHATLOAD_EXCEPTION_H
 
 
 // Containers
 #include <string>
 
-// C++ REST SDK (JSON)
-#include <cpprest/json.h>
+// Exceptions
+#include <exception>
 
 namespace chatload {
-class config {
+inline namespace exception {
+class runtime_error : public std::exception {
 private:
-    std::wstring storage_path;
-
-protected:
-    web::json::value storage;
+    std::wstring msg;
 
 public:
-    explicit config(const std::wstring& file);
-    virtual ~config() = default;
-    bool load(const std::wstring& file);
-    bool save();
-    bool reload();
-    virtual web::json::value get(const std::wstring& path);
-    virtual bool set(const std::wstring& path, web::json::value content);
+    explicit runtime_error(const std::wstring& what) : msg(what) {}
+    explicit runtime_error(std::wstring&& what) noexcept : msg(what) {}
+    const char* what() const noexcept final { return "See what_wide"; }
+    virtual std::wstring what_wide() const { return this->msg; }
 };
+}  // namespace exception
 }  // namespace chatload
 
 
-#endif  // CHATLOAD_CONFIG_H
+#endif  // CHATLOAD_EXCEPTION_H

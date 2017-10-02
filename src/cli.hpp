@@ -20,34 +20,29 @@
 
 // Header guard
 #pragma once
-#ifndef CHATLOAD_CONFIG_H
-#define CHATLOAD_CONFIG_H
+#ifndef CHATLOAD_CLI_H
+#define CHATLOAD_CLI_H
 
 
 // Containers
 #include <string>
 
-// C++ REST SDK (JSON)
-#include <cpprest/json.h>
+// chatload components
+#include "constants.hpp"
 
 namespace chatload {
-class config {
-private:
-    std::wstring storage_path;
-
-protected:
-    web::json::value storage;
-
-public:
-    explicit config(const std::wstring& file);
-    virtual ~config() = default;
-    bool load(const std::wstring& file);
-    bool save();
-    bool reload();
-    virtual web::json::value get(const std::wstring& path);
-    virtual bool set(const std::wstring& path, web::json::value content);
+namespace cli {
+struct options {
+    bool verbose = false;
+    bool use_cache = true;
+    std::wstring config_file = chatload::CONFIGFILE;
+    std::wstring cache_file = chatload::CACHEFILE;
+    std::wstring log_folder;
 };
+
+options parseArgs(int argc, wchar_t* argv[]);
+}  // namespace cli
 }  // namespace chatload
 
 
-#endif  // CHATLOAD_CONFIG_H
+#endif  // CHATLOAD_CLI_H

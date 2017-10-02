@@ -1,260 +1,154 @@
 /*
- * chatload: collect EVE Online character names from chat logs
- * Copyright (C) 2015  Leo Blöcher
+ * chatload: Log reader to collect EVE Online character names
+ * Copyright (C) 2015-2017  Leo Blöcher
  *
- * This file is part of chatload.
+ * This file is part of chatload-client.
  *
- * chatload is free software: you can redistribute it and/or modify
+ * chatload-client is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * chatload is distributed in the hope that it will be useful,
+ * chatload-client is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with chatload.  If not, see <http://www.gnu.org/licenses/>.
+ * along with chatload-client.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-// Dynamic memory allocation
-#include <new>
+// Forward declaration
+#include "chatload.hpp"
 
 // Streams
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <locale>
-#include <codecvt>
 
 // Containers
 #include <string>
 #include <vector>
 #include <unordered_set>
-#include <tuple>
-#include <iterator>
-
-// Threading
-#include <future>
 
 // Exceptions
 #include <exception>
+#include <stdexcept>
+
+// Threading
+#include <thread>
 
 // Utility
+#include <iomanip>
 #include <regex>
-#include <chrono>
 
-// Casablanca (HTTP Client, JSON)
-#include <cpprest\http_client.h>
-#include <cpprest\json.h>
+// C++ REST SDK (HTTP Client, JSON)
+#include <cpprest/http_client.h>
+#include <cpprest/json.h>
 
-// Configuration
+// wait-free queue
+#include "readerwriterqueue/readerwriterqueue.h"
+
+// chatload components
+#include "constants.hpp"
+#include "exception.hpp"
+#include "cli.hpp"
 #include "config.hpp"
-
-// WinAPI
-#include <Windows.h>
-#include <ShlObj.h>
-#include <objbase.h>
-
-
-// Chatload constants
-namespace chatload {
-// Version
-static const std::string VERSION = "1.5.0";
-}
+#include "os.hpp"
+#include "reader.hpp"
+#include "consumer.hpp"
+#include "network.hpp"
+#include "format.hpp"
 
 
-// Returns a std::wstring with current user's Documents folder
-std::wstring GetDocumentsFolder() {
-    PWSTR pathptr;
-    SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &pathptr);
-
-    std::wstring path = pathptr;
-    CoTaskMemFree(static_cast<LPVOID>(pathptr));
-    return path;
-}
-
-
-// Returns a std::vector<std::wstring> with all lines from all chat logs whose name matches pattern
-std::vector<std::wstring> ReadLogs(bool showReadFiles, const std::wregex& pattern) {
-    std::wstring logDir = GetDocumentsFolder() + L"\\EVE\\logs\\Chatlogs\\";
-    std::wstring filename;
-    std::wstring line;
-    std::vector<std::wstring> lines;
-
-    WIN32_FIND_DATA data;
-    HANDLE dHandle;
-
-    // Ignore '.' and '..' (standard files)
-    dHandle = FindFirstFile((logDir + L"*").c_str(), &data);
-    FindNextFile(dHandle, &data);
-
-    while (FindNextFile(dHandle, &data) != 0) {
-        filename = data.cFileName;
-
-        if (std::regex_match(filename, pattern)) {
-            // EVE Online logs are UCS-2 (LE) encoded
-            std::wifstream filestream(logDir + filename, std::ios::binary);
-            filestream.imbue(std::locale(
-                filestream.getloc(), new std::codecvt_utf16<wchar_t, 0xFFFF, std::consume_header>));
-
-            // Ignore first 12 lines (metadata)
-            for (int iter = 0; iter < 12; iter++) {
-                std::getline(filestream, line);
-            }
-
-            while (std::getline(filestream, line)) {
-                lines.push_back(line);
-            }
-
-            if (showReadFiles) {
-                std::wcout << filename << L" ("
-                           << (data.nFileSizeHigh * (static_cast<DWORDLONG>(MAXDWORD) + 1)) + data.nFileSizeLow
-                           << L" bytes)" << std::endl;
-            }
-        }
-    }
-
-    FindClose(dHandle);
-    return lines;
-}
-
-
-// Returns a std::vector<std::wstring> with all character names
-std::vector<std::wstring> filterNames(const std::vector<std::wstring>& vec) {
-    std::unordered_set<std::wstring> charNames;
-
-    /*
-     * Matches character names using wexp
-     * Format: [ YYYY.MM.DD HH:mm:ss ] CHARACTER_NAME > TEXT
-     * wmatches[0] = full string
-     * wmatches[1] = CHARACTER_NAME
-     */
-    std::wsmatch wmatches;
-    std::wregex charNameRegex(L"\\[[\\d\\.: ]{21}\\] ([\\w ]+) > .*");
-
-    for (const auto& line : vec) {
-        if (std::regex_search(line, wmatches, charNameRegex)) {
-            charNames.insert(wmatches[1]);
-        }
-    }
-
-    return std::vector<std::wstring>(charNames.begin(), charNames.end());
-}
-
-
-// Returns a std::wstring with the concatenation of vec using sep as seperator
-std::wstring joinVec(const std::vector<std::wstring>& vec, const std::wstring& sep) {
-    std::wstringstream wss;
-    wss << vec[0];
-
-    for (auto iter = std::next(vec.begin()); iter != vec.end(); iter++) {
-        wss << sep
-            << *iter;
-    }
-
-    return wss.str();
-}
-
-
-int main(int argc, char* argv[]) {
-    // Window title
-    SetConsoleTitle(L"Chatload");
-
-
-    // Version output
-    if (argc == 2 && (std::strcmp(argv[1], "-V") == 0 || std::strcmp(argv[1], "--version") == 0)) {
-        std::cout << argv[0] << " " << chatload::VERSION << std::endl
-                  << "Copyright (C) 2015  Leo Bloecher" << std::endl << std::endl
-                  << "This program comes with ABSOLUTELY NO WARRANTY." << std::endl
-                  << "This is free software, and you are welcome to redistribute it under certain conditions."
-                  << std::endl;
-        return 0;
-    }
-
-
-    // Load configuration
-    chatload::config cfg(L"config.json");
-
-
-    std::cout << "This app scrapes your EVE Online chat logs for character names and adds them to a database"
-              << std::endl << std::endl;
-
-
-    // Read all logs
-    std::cout << "Files read:" << std::endl;
-    std::vector<std::wstring> allLines;
+int main(int, char**) {
+    chatload::os::SetTerminalTitle(chatload::NAME);
+    chatload::cli::options args;
     try {
-        allLines = ReadLogs(true, std::wregex(cfg.get(L"regex").as_string()));
-    } catch (std::exception& ex) {
-        std::cerr << "ERROR: " << ex.what() << std::endl
-                  << "Couldn't read all logs, shutting down" << std::endl;
+        chatload::os::wargs wargs;
+        args = chatload::cli::parseArgs(wargs.size(), wargs.data());
+    } catch (chatload::runtime_error& ex) {
+        // Version/Help
+        std::wcout << ex.what_wide() << std::endl;
+        return 0;
+    } catch (std::runtime_error& ex) {
+        // wargs error
+        std::wcerr << "ERROR: " << ex.what() << std::endl;
+        return 1;
+    } catch (std::logic_error& ex) {
+        // boost::program_options error
+        std::wcerr << "ERROR: " << ex.what() << std::endl;
+        std::wcout << "See -h/--help for allowed options" << std::endl;
         return 1;
     }
-    std::cout << "Total of " << allLines.size() << " lines read (excluding metadata)" << std::endl << std::endl;
 
+    chatload::config cfg(args.config_file);
+
+    std::wcout << "This app scrapes your EVE Online chat logs for character names and adds them to a database\n"
+               << std::endl;
+
+
+    // Read logs
+    std::unordered_set<std::wstring> names;
+    moodycamel::ReaderWriterQueue<std::wstring> queue;
+
+    chatload::reader::read_stat res;
+    const std::wregex regex(cfg.get(L"regex").as_string(), std::wregex::optimize | std::wregex::ECMAScript);
+    const auto file_cb = [](chatload::os::dir_entry& file) {
+        std::wcout << file.name << " (" << file.size << " byte" << (file.size != 1 ? "s)" : ")") << "\n";
+    };
 
     // Extract character names asynchronously
-    std::cout << "Filtering character names" << std::endl << std::endl;
-    std::future<std::vector<std::wstring>> charNameThread = std::async(&filterNames, std::ref(allLines));
+    std::thread consumer(chatload::consumer::consumeLogs, std::ref(queue), std::ref(names));
 
-
-    // Create Casablanca client(s)
-    // httpClients = std::vector<std::tuple<CLIENT, HOST, RESOURCE, PARAMETER>>
-    std::cout << "Establishing connection(s)... ";
-    std::vector<std::tuple<web::http::client::http_client, std::wstring, std::wstring, std::wstring>> httpClients;
     try {
-        web::json::array POSTEndpoints = cfg.get(L"POST").as_array();
-        for (auto endpoint : POSTEndpoints) {
-            httpClients.push_back(std::make_tuple(
-                web::http::client::http_client(endpoint.at(L"host").as_string()),
-                endpoint.at(L"host").as_string(),
-                endpoint.at(L"resource").as_string(),
-                endpoint.at(L"parameter").as_string()));
+        if (args.verbose) {
+            std::wcout << "Files read:\n";
+            res = chatload::reader::readLogs(args, regex, queue, file_cb);
+        } else {
+            std::wcout << "Reading files...\n";
+            res = chatload::reader::readLogs(args, regex, queue);
         }
-    } catch (std::exception& ex) {
-        std::cerr << "ERROR: " << ex.what() << std::endl
-                  << "Couldn't read all endpoints, shutting down" << std::endl;
+    } catch (chatload::runtime_error& ex) {
+        std::wcerr << "ERROR: " << ex.what_wide() << std::endl;
+        std::wcout << "Failed to read logs, shutting down" << std::endl;
+
+        // Terminate consumer gracefully
+        queue.enqueue(std::wstring());
+        consumer.join();
         return 1;
     }
-    std::cout << httpClients.size() << " connection(s) established" << std::endl << std::endl;
+
+    auto fmt = chatload::format::format_size(res.bytes_read);
+    std::string dur = chatload::format::format_duration(res.duration);
+
+    std::wcout << "Total of " << res.files_read << " files with a size of " << std::fixed << std::setprecision(2)
+               << fmt.first << " " << fmt.second.c_str() << " read within " << dur.c_str() << std::endl;
+
+    consumer.join();
+    if (names.empty()) { return 0; }
 
 
-    // Wait for character names to become available
-    std::cout << "Waiting for character names filter...";
-    std::future_status charNameStatus = charNameThread.wait_for(std::chrono::seconds(0));
-    while (charNameStatus != std::future_status::ready) {
-        charNameStatus = charNameThread.wait_for(std::chrono::seconds(1));
-        std::cout << ".";
+    // Upload character names
+    std::wcout << "\nEstablishing connection(s)...";
+
+    std::vector<pplx::task<void>> reqs;
+    try {
+        reqs = chatload::network::sendNames(cfg.get(L"POST").as_array(), names);
+    } catch (std::exception& ex) {
+        std::wcout << "\n";
+        std::wcerr << "ERROR: " << ex.what() << std::endl;
+        std::wcout << "Failed to read endpoints, shutting down" << std::endl;
+        return 1;
     }
-    std::cout << std::endl << std::endl;
 
-    // Retrieve and concatenate character names
-    std::wstring charNames = joinVec(charNameThread.get(), L",");
+    std::wcout << " " << reqs.size() << " connection(s) established\n"
+               << "Adding character names to the endpoint(s)" << std::endl;
 
-
-    // POST character names
-    std::cout << "Adding character names to database" << std::endl;
-    for (auto client : httpClients) {
-        pplx::task<web::http::http_response> postThread = std::get<0>(client).request(
-            web::http::methods::POST,
-            std::get<2>(client),
-            std::get<3>(client) + L"=" + charNames,
-            L"application/x-www-form-urlencoded");
-        postThread.then([&client](web::http::http_response response) {
-            if (response.status_code() == web::http::status_codes::OK) {
-                std::wcout << L"Successfully added character names to DB at " << std::get<1>(client) << std::endl;
-            } else {
-                std::wcout << L"Failed to add character names to DB at " << std::get<1>(client) << std::endl;
-            }
-        })
-        .wait();
+    try {
+        pplx::when_all(reqs.cbegin(), reqs.cend()).wait();
+    } catch (web::http::http_exception& ex) {
+        std::wcerr << "ERROR: " << ex.what() << std::endl;
+        std::wcout << "Failed to add character names to one of the endpoints" << std::endl;
     }
-    std::cout << std::endl;
 
-
-    // End program
     return 0;
 }

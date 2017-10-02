@@ -1,23 +1,25 @@
 /*
- * chatload: collect EVE Online character names from chat logs
- * Copyright (C) 2015  Leo Blöcher
+ * chatload: Log reader to collect EVE Online character names
+ * Copyright (C) 2015-2017  Leo Blöcher
  *
- * This file is part of chatload.
+ * This file is part of chatload-client.
  *
- * chatload is free software: you can redistribute it and/or modify
+ * chatload-client is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * chatload is distributed in the hope that it will be useful,
+ * chatload-client is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with chatload.  If not, see <http://www.gnu.org/licenses/>.
+ * along with chatload-client.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Forward declaration
+#include "config.hpp"
 
 // Streams
 #include <iostream>
@@ -32,49 +34,51 @@
 // Exceptions
 #include <exception>
 
-// Casablanca (JSON)
-#include <cpprest\json.h>
+// C++ REST SDK (JSON)
+#include <cpprest/json.h>
 
-// Forward declaration
-#include "config.hpp"
+// chatload components
+#include "constants.hpp"
 
 
+namespace {
 // Returns true if filename exists or false otherwise
 inline bool fileExists(const std::wstring& filename) {
-    std::wifstream in(filename);
-    return in.good();
+    return std::wifstream(filename).good();
 }
 
 
-// Returns a std::wstring with the content of filename
+// Returns a std::wstring with the content of filename or an empty string if it fails
 std::wstring get_file_content(const std::wstring& filename) {
     std::wifstream in(filename);
+    std::wstring content;
 
     if (in.good()) {
-        std::wstring content;
         in.seekg(0, std::wifstream::end);
-        content.resize(static_cast<std::wstring::size_type>(in.tellg()));
+        content.resize(in.tellg());
+
         in.seekg(0, std::wifstream::beg);
         in.read(&content[0], content.size());
-        return content;
     } else {
-        std::cerr << "ERROR: Can't read file content" << std::endl;
-        return std::wstring();
+        std::cerr << "ERROR: Can't read from file" << std::endl;
     }
+
+    return content;
 }
 
 
 // Returns true after writing content to filename or false if it fails
 bool set_file_content(const std::wstring& filename, const std::wstring& content) {
-    std::wofstream out(filename, std::wofstream::out | std::wofstream::trunc);
+    std::wofstream out(filename, std::wofstream::trunc);
 
     if (out.good()) {
         out << content;
         return true;
     } else {
-        std::cerr << "ERROR: Can't write content to file" << std::endl;
-        return false;
+        std::cerr << "ERROR: Can't write to file" << std::endl;
     }
+
+    return false;
 }
 
 
@@ -106,16 +110,24 @@ std::wstring prettyJSON(std::wstring input) {
 
         // EOL after opening/closing brackets and commas
         // Space after colons
-        if (input[iter] == L'[' || input[iter] == L'{' || input[iter] == L',') {
+        if ((input[iter] == L'[' && input[iter + 1] != L']') ||
+            (input[iter] == L'{' && input[iter + 1] != L'}') ||
+            input[iter] == L',')
+        {
             input.insert(++iter, L"\n");
-        } else if (input[iter] == L']' || input[iter] == L'}') {
+        }
+        else if ((input[iter] == L']' && input[iter - 1] != L'[') ||
+                 (input[iter] == L'}' && input[iter - 1] != L'{'))
+        {
             input.insert(iter++, L"\n");
-        } else if (input[iter] == L':') {
+        }
+        else if (input[iter] == L':')
+        {
             input.insert(++iter, L" ");
         }
     }
 
-    // Indentation (4 spaces)
+    // Indentation (2 spaces)
     isString = false;
     unsigned int indentLevel = 0;
     for (std::wstring::size_type iter = 0; iter < input.length(); iter++) {
@@ -129,7 +141,7 @@ std::wstring prettyJSON(std::wstring input) {
 
         // Add/remove indent level after opening/closing brackets
         if (input[iter] == L'[' || input[iter] == L'{') {
-            indentLevel++;
+            indentLevel += 1;
         }
         if (input[iter + 1] == L']' || input[iter + 1] == L'}') {
             indentLevel -= (indentLevel == 0 ? 0 : 1);
@@ -137,21 +149,18 @@ std::wstring prettyJSON(std::wstring input) {
 
         if (input[iter] == L'\n') {
             for (unsigned int indentIter = 0; indentIter < indentLevel; indentIter++) {
-                input.insert(iter + 1, L"    ");
-                iter += 4;
+                input.insert(iter + 1, L"  ");
+                iter += 2;
             }
         }
     }
+
     return input;
 }
+}  // Anonymous namespace
 
 
 namespace chatload {
-// Default config
-static const web::json::value DEFAULTCONFIG = web::json::value::parse(
-    L"{\"POST\": [{\"host\": \"http://api.dashsec.com\", \"resource\": \"/charDump.php\", \"parameter\": \"name\"}],"
-    L" \"regex\": \".*\"}");
-
 // chatload::config load/save functions
 // Constructor
 config::config(const std::wstring& filename) {
@@ -160,28 +169,28 @@ config::config(const std::wstring& filename) {
 
 // Returns true after loading filename as new configuration or false if the default configuration is used
 bool config::load(const std::wstring& filename) {
-    cfgFilename = filename;
+    this->storage_path = filename;
 
-    if (fileExists(cfgFilename)) {
+    if (fileExists(this->storage_path)) {
         try {
-            cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
+            this->storage = web::json::value::parse(get_file_content(this->storage_path).c_str());
             return true;
         } catch (std::exception& ex) {
             std::cerr << "ERROR: " << ex.what() << std::endl;
-            std::cerr << "Loading default configuration" << std::endl;
-            cfgObj = chatload::DEFAULTCONFIG;
+            std::cout << "Loading default configuration" << std::endl;
+            this->storage = web::json::value::parse(chatload::DEFAULTCONFIG);
         }
     } else {
-        cfgObj = chatload::DEFAULTCONFIG;
+        this->storage = web::json::value::parse(chatload::DEFAULTCONFIG);
         save();
     }
     return false;
 }
 
-// Returns true after saving the current configuration to cfgFilename or false if it fails
+// Returns true after saving the current configuration to storagePath or false if it fails
 bool config::save() {
     try {
-        set_file_content(cfgFilename, prettyJSON(cfgObj.serialize()));
+        set_file_content(this->storage_path, prettyJSON(this->storage.serialize()));
         return true;
     } catch (std::exception& ex) {
         std::cerr << "ERROR: " << ex.what() << std::endl;
@@ -189,47 +198,46 @@ bool config::save() {
     return false;
 }
 
-// Returns true after reloading the configuration from cfgFilename or false if it fails
+// Returns true after reloading the configuration from storagePath or false if it fails
 bool config::reload() {
-    if (fileExists(cfgFilename)) {
+    if (fileExists(this->storage_path)) {
         try {
-            cfgObj = web::json::value::parse(get_file_content(cfgFilename).c_str());
+            this->storage = web::json::value::parse(get_file_content(this->storage_path).c_str());
             return true;
         } catch (std::exception& ex) {
             std::cerr << "ERROR: " << ex.what() << std::endl;
         }
-    } else {
-        save();
     }
     return false;
 }
+
 
 // chatload::config get/set functions
 // path is a std::wstring in the format "path/to/value" and specifies which value to get/set
 // Returns a web::json::value with the content of path or an empty value if the lookup fails
 web::json::value config::get(const std::wstring& path) {
-    std::vector<std::wstring> objPath = splitString(path, L'/');
+    std::vector<std::wstring> pathParts = splitString(path, L'/');
+    web::json::value val;
 
     try {
-        web::json::value val = cfgObj.at(objPath[0]);
-        for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
+        val = this->storage.at(pathParts[0]);
+        for (auto iter = std::next(pathParts.begin()); iter != pathParts.end(); iter++) {
             val = val.at(*iter);
         }
-
-        return val;
     } catch (web::json::json_exception& ex) {
         std::cerr << "ERROR: " << ex.what() << std::endl;
-        return web::json::value();
     }
+
+    return val;
 }
 
 // Returns true after setting content at path or false if it fails
 bool config::set(const std::wstring& path, web::json::value content) {
-    std::vector<std::wstring> objPath = splitString(path, L'/');
+    std::vector<std::wstring> pathParts = splitString(path, L'/');
 
     try {
-        web::json::value& val = cfgObj[objPath[0]];
-        for (auto iter = std::next(objPath.begin()); iter != objPath.end(); iter++) {
+        web::json::value& val = this->storage[pathParts[0]];
+        for (auto iter = std::next(pathParts.begin()); iter != pathParts.end(); iter++) {
             val = val[*iter];
         }
 
@@ -237,7 +245,8 @@ bool config::set(const std::wstring& path, web::json::value content) {
         return true;
     } catch (web::json::json_exception& ex) {
         std::cerr << "ERROR: " << ex.what() << std::endl;
-        return false;
     }
+
+    return false;
 }
 }  // namespace chatload

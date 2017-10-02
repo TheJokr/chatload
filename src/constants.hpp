@@ -20,34 +20,22 @@
 
 // Header guard
 #pragma once
-#ifndef CHATLOAD_CONFIG_H
-#define CHATLOAD_CONFIG_H
+#ifndef CHATLOAD_CONSTANTS_H
+#define CHATLOAD_CONSTANTS_H
 
-
-// Containers
-#include <string>
-
-// C++ REST SDK (JSON)
-#include <cpprest/json.h>
 
 namespace chatload {
-class config {
-private:
-    std::wstring storage_path;
-
-protected:
-    web::json::value storage;
-
-public:
-    explicit config(const std::wstring& file);
-    virtual ~config() = default;
-    bool load(const std::wstring& file);
-    bool save();
-    bool reload();
-    virtual web::json::value get(const std::wstring& path);
-    virtual bool set(const std::wstring& path, web::json::value content);
-};
+inline namespace constants {
+constexpr char VERSION[] = "2.0.0-dev";
+constexpr wchar_t NAME[] = L"Chatload";
+constexpr wchar_t CONFIGFILE[] = L"config.json";
+constexpr char CONFIG_HELP[] = "config.json";
+constexpr wchar_t CACHEFILE[] = L"filecache.tsv";
+constexpr char CACHE_HELP[] = "filecache.tsv";
+constexpr wchar_t DEFAULTCONFIG[] = LR"({"POST": [{"host": "https://api.dashsec.com", "resource": "/charDump.php", )"
+                                    LR"("parameter": "name"}], "regex": ".*"})";
+}  // namespace constants
 }  // namespace chatload
 
 
-#endif  // CHATLOAD_CONFIG_H
+#endif  // CHATLOAD_CONSTANTS_H
