@@ -1,22 +1,6 @@
 language: python
-
 sudo: false
-
-services: mysql
-
-addons:
-  apt:
-    packages:
-    - php5-cli
-
 install:
-    - pip install pep8
-    - wget https://raw.githubusercontent.com/google/styleguide/gh-pages/cpplint/cpplint.py
-
-before_script:
-    - mysql -uroot < sql/schema.sql
-
+  - wget https://raw.githubusercontent.com/google/styleguide/gh-pages/cpplint/cpplint.py
 script:
-    - php -l scripts/charDump.php
-    - pep8 scripts/
-    - python cpplint.py --linelength=120 --extensions=hpp,cpp --filter=-build/c++11,-build/include_order src/*
+  - python cpplint.py --linelength=120 --extensions=cpp --headers=hpp src/*
