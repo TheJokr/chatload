@@ -80,7 +80,7 @@ int main(int, char**) {
         return 1;
     }
 
-    chatload::config cfg(args.config_file);
+    chatload::config cfg(L"config.json");  // TODO: remove
 
     std::wcout << "This app scrapes your EVE Online chat logs for character names and adds them to a database\n"
                << std::endl;
@@ -91,7 +91,7 @@ int main(int, char**) {
     moodycamel::ReaderWriterQueue<std::wstring> queue;
 
     chatload::reader::read_stat res;
-    const std::wregex regex(cfg.get(L"regex").as_string(), std::wregex::optimize | std::wregex::ECMAScript);
+    const std::wregex regex(args.regex, std::wregex::optimize | std::wregex::ECMAScript);
     const auto file_cb = [](chatload::os::dir_entry& file) {
         std::wcout << file.name << " (" << file.size << " byte" << (file.size != 1 ? "s)" : ")") << "\n";
     };

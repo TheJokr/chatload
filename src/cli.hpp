@@ -24,20 +24,33 @@
 #define CHATLOAD_CLI_H
 
 
+// C headers
+#include <cstdint>
+
 // Containers
 #include <string>
+#include <vector>
+
+// Boost
+#include <boost/optional.hpp>
 
 // chatload components
 #include "constants.hpp"
 
 namespace chatload {
 namespace cli {
+struct host {
+    std::wstring name;
+    std::uint_least16_t port;
+};
+
 struct options {
     bool verbose = false;
     bool use_cache = true;
-    std::wstring config_file = chatload::CONFIGFILE;
+    std::wstring regex;
     std::wstring cache_file = chatload::CACHEFILE;
-    std::wstring log_folder;
+    boost::optional<std::wstring> log_folder;
+    std::vector<host> hosts;
 };
 
 options parseArgs(int argc, wchar_t* argv[]);

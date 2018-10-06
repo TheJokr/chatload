@@ -71,15 +71,15 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
     chatload::reader::read_stat res;
     const auto start_time = std::chrono::system_clock::now();
 
-    if (args.log_folder.empty()) {
-        args.log_folder = chatload::os::GetDocumentsFolder() + LR"(\EVE\logs\Chatlogs\)";
-    }
+    std::wstring log_folder = args.log_folder.value_or_eval([] {
+        return chatload::os::GetDocumentsFolder() + LR"(\EVE\logs\Chatlogs\)";
+    });
 
     chatload::os::dir_list log_dir;
     try {
-        log_dir = chatload::os::dir_list(args.log_folder);
+        log_dir = chatload::os::dir_list(log_folder);
     } catch (std::runtime_error&) {
-        throw chatload::runtime_error(L"Failed to search for logs in " + args.log_folder);
+        throw chatload::runtime_error(L"Failed to search for logs in " + log_folder);
     }
 
     chatload::file_cache::type cache;
@@ -93,7 +93,7 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
 
         // If readUTF16LE returns true, buf.empty() always returns false
         std::wstring buf;
-        if (!chatload::reader::readUTF16LE(args.log_folder + file.name, buf)) { continue; }
+        if (!chatload::reader::readUTF16LE(log_folder + file.name, buf)) { continue; }
         while (!queue.try_enqueue(std::move(buf))) {}
 
         cache[file.name] = file.write_time;

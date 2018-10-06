@@ -22,12 +22,18 @@
 #include "cli.hpp"
 
 // Streams
+#include <fstream>
 #include <sstream>
 
 // Containers
 #include <string>
+#include <vector>
+
+// Utility
+#include <utility>
 
 // Boost
+#include <boost/optional.hpp>
 #include <boost/program_options.hpp>
 
 // chatload components
@@ -37,6 +43,44 @@
 
 namespace po = boost::program_options;
 
+namespace {
+void parseConfig(const std::wstring& file, po::variables_map& vm) {
+    std::wifstream in(file);
+    if (in) {
+        po::options_description cfg_options;
+        cfg_options.add_options()
+            ("network.host", po::wvalue<std::vector<std::wstring>>())
+            ("regex", po::wvalue<std::wstring>()->default_value(L".*", ".*"));
+
+        po::store(po::parse_config_file(in, cfg_options), vm);
+    } else {
+        vm.emplace(std::string("regex"), po::variable_value(std::wstring(L".*"), true));
+    }
+}
+
+std::vector<chatload::cli::host> parseHosts(po::variables_map& vm) {
+    std::vector<chatload::cli::host> hosts;
+
+    if (vm.count("network.host")) {
+        const auto& host_lits = vm["network.host"].as<std::vector<std::wstring>>();
+        for (const auto& host_lit : host_lits) {
+            auto name_end = host_lit.find(L':');
+            if (name_end == std::wstring::npos) {
+                hosts.push_back({ host_lit, chatload::DEFAULTPORT });
+            } else {
+                hosts.push_back({ host_lit.substr(0, name_end),
+                                  static_cast<std::uint_least16_t>(std::stoi(host_lit.substr(name_end + 1))) });
+            }
+        }
+    } else {
+        hosts.push_back({ chatload::DEFAULTHOST, chatload::DEFAULTPORT });
+    }
+
+    return hosts;
+}
+}  // Anonymous namespace
+
+
 chatload::cli::options chatload::cli::parseArgs(int argc, wchar_t* argv[]) {
     namespace clcfg = chatload::constants;
 
@@ -44,23 +88,22 @@ chatload::cli::options chatload::cli::parseArgs(int argc, wchar_t* argv[]) {
     visible_options.add_options()
         ("help,h", "display this help text and exit")
         ("version,V", "display version information and exit")
-        ("verbose,v", "display read logs")
-        ("force,f", "read all logs instead of only unknown ones")
+        ("verbose,v", "list read logs")
+        ("force,f", "read all logs, even if they have been read before")
         ("config", po::wvalue<std::wstring>()->default_value(clcfg::CONFIGFILE, clcfg::CONFIG_HELP), "config file")
         ("cache", po::wvalue<std::wstring>()->default_value(clcfg::CACHEFILE, clcfg::CACHE_HELP), "cache file");
 
-    po::options_description cmd_options;
-    cmd_options.add(visible_options);
-    cmd_options.add_options()
-        ("log-path", po::wvalue<std::wstring>()->default_value(std::wstring(), std::string()), "path to logs");
+    boost::optional<std::wstring> log_path;
+    po::options_description cli_options;
+    cli_options.add(visible_options);
+    cli_options.add_options()("log-path", po::wvalue(&log_path), "path to logs");
 
     po::positional_options_description pos_options;
     pos_options.add("log-path", 1);
 
     po::variables_map vm;
-    po::wcommand_line_parser prs(argc, argv);
-    prs.options(cmd_options).positional(pos_options).allow_unregistered();
-    po::store(prs.run(), vm);
+    po::store(po::wcommand_line_parser(argc, argv).options(cli_options).positional(pos_options).run(), vm);
+    parseConfig(vm["config"].as<std::wstring>(), vm);
     po::notify(vm);
 
     std::wostringstream out;
@@ -77,13 +120,15 @@ chatload::cli::options chatload::cli::parseArgs(int argc, wchar_t* argv[]) {
 
         std::stringstream ss;
         ss << visible_options;
+        std::string desc(ss.str());
+        desc.pop_back();
 
         out << "Usage: " << argv[0] << " [OPTION]... [path to EVE logs]\n\n"
-            << ss.str().c_str();
+            << desc.c_str();
     }
 
     if (ver || help) { throw chatload::runtime_error(out.str()); }
 
-    return { vm.count("verbose") != 0, vm.count("force") == 0, vm["config"].as<std::wstring>(),
-             vm["cache"].as<std::wstring>(), vm["log-path"].as<std::wstring>() };
+    return { vm.count("verbose") != 0, vm.count("force") == 0, vm["regex"].as<std::wstring>(),
+             vm["cache"].as<std::wstring>(), std::move(log_path), parseHosts(vm) };
 }
