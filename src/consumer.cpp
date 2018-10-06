@@ -1,6 +1,6 @@
 /*
  * chatload: Log reader to collect EVE Online character names
- * Copyright (C) 2015-2017  Leo Blöcher
+ * Copyright (C) 2015-2018  Leo Blöcher
  *
  * This file is part of chatload-client.
  *
@@ -28,7 +28,7 @@
 // Utility
 #include <utility>
 
-// wait-free queue
+// lock-free queue
 #include "readerwriterqueue/readerwriterqueue.h"
 
 // chatload components

@@ -1,6 +1,6 @@
 /*
  * chatload: Log reader to collect EVE Online character names
- * Copyright (C) 2015-2017  Leo Blöcher
+ * Copyright (C) 2015-2018  Leo Blöcher
  *
  * This file is part of chatload-client.
  *
@@ -67,7 +67,7 @@ chatload::cli::options chatload::cli::parseArgs(int argc, wchar_t* argv[]) {
     bool ver = vm.count("version"), help = vm.count("help");
     if (ver) {
         out << argv[0] << " version " << chatload::VERSION << "\n"
-            << "Copyright (C) 2015-2017  Leo Bloecher\n"
+            << "Copyright (C) 2015-2018  Leo Bloecher\n"
             << "This program comes with ABSOLUTELY NO WARRANTY.\n"
             << "This is free software, and you are welcome to redistribute it under certain conditions.";
     }
