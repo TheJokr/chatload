@@ -28,6 +28,9 @@
 // Utility
 #include <utility>
 
+// Boost
+#include <boost/optional.hpp>
+
 // lock-free queue
 #include "readerwriterqueue/readerwriterqueue.h"
 
@@ -37,18 +40,16 @@
 
 void chatload::consumer::consumeLogs(moodycamel::ReaderWriterQueue<std::wstring>& queue,
                                      std::unordered_set<std::wstring>& out) {
-    while (true) {
-        std::wstring file;
+    // Empty string signalizes end of files
+    std::wstring file;
+    do {
         while (!queue.try_dequeue(file)) {}
-
-        // Empty string signalizes end of files
-        if (file.empty()) { break; }
 
         std::wstring::size_type beg, last = 0;
         while ((beg = file.find(L'[', last)) != std::wstring::npos) {
-            std::wstring char_name = chatload::format::extract_name(file, beg);
-            if (!char_name.empty()) { out.insert(std::move(char_name)); }
+            boost::optional<std::wstring> char_name = chatload::format::extract_name(file, beg);
+            if (char_name) { out.insert(std::move(*char_name)); }
             last = beg + 1;
         }
-    }
+    } while (!file.empty());
 }

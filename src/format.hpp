@@ -38,6 +38,9 @@
 #include <utility>
 #include <chrono>
 
+// Boost
+#include <boost/optional.hpp>
+
 namespace chatload {
 namespace format {
 inline std::pair<long double, std::string> format_size(unsigned long long bytes) {
@@ -69,14 +72,14 @@ inline std::string format_duration(const std::chrono::duration<Rep, Period>& dur
     secs %= 60;
 
     std::ostringstream oss;
-    if (neg) { oss << "-"; }
-    if (hours) { oss << hours << "h"; }
-    if (mins) { oss << mins << "m"; }
-    if (secs || (!hours && !mins)) { oss << secs << "s"; }
+    if (neg) { oss << '-'; }
+    if (hours) { oss << hours << 'h'; }
+    if (mins) { oss << mins << 'm'; }
+    if (secs || (!hours && !mins)) { oss << secs << 's'; }
     return oss.str();
 }
 
-inline std::wstring extract_name(const std::wstring& line, std::wstring::size_type header_beg) {
+inline boost::optional<std::wstring> extract_name(const std::wstring& line, std::wstring::size_type header_beg) {
     // Format: [ YYYY.MM.DD HH:mm:ss ] CHARACTER_NAME > TEXT
     // Some lines may be damaged due to missing synchronization on CCP's part
     // See https://community.eveonline.com/support/policies/naming-policy-en/
@@ -84,7 +87,7 @@ inline std::wstring extract_name(const std::wstring& line, std::wstring::size_ty
 
     if (header_beg + header_len >= line.size() || line.at(header_beg + header_len) != L']') {
         // Invalid match
-        return std::wstring();
+        return boost::none;
     }
 
     std::wstring::size_type name_beg = header_beg + header_len + 2;
