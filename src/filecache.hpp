@@ -24,15 +24,18 @@
 #define CHATLOAD_FILECACHE_H
 
 
+// C headers
+#include <cstdint>
+
 // Containers
 #include <string>
 #include <unordered_map>
 
 namespace chatload {
 namespace file_cache {
-typedef std::unordered_map<std::wstring, unsigned long long> type;
-bool save_to_file(const type& cache, const std::wstring& file);
-type load_from_file(const std::wstring& file);
+typedef std::unordered_map<std::wstring, std::uint_least64_t> cache_t;
+bool save_to_file(const cache_t& cache, const std::wstring& file);
+cache_t load_from_file(const std::wstring& file);
 }  // namespace file_cache
 }  // namespace chatload
 

@@ -21,6 +21,9 @@
 // Forward declaration
 #include "filecache.hpp"
 
+// C headers
+#include <cstdint>
+
 // Streams
 #include <fstream>
 
@@ -32,7 +35,7 @@
 #include <limits>
 
 
-bool chatload::file_cache::save_to_file(const chatload::file_cache::type& cache, const std::wstring& file) {
+bool chatload::file_cache::save_to_file(const chatload::file_cache::cache_t& cache, const std::wstring& file) {
     std::wofstream out(file, std::fstream::trunc);
     if (!out) { return false; }
 
@@ -43,12 +46,12 @@ bool chatload::file_cache::save_to_file(const chatload::file_cache::type& cache,
     return true;
 }
 
-chatload::file_cache::type chatload::file_cache::load_from_file(const std::wstring& file) {
-    chatload::file_cache::type cache;
+chatload::file_cache::cache_t chatload::file_cache::load_from_file(const std::wstring& file) {
+    chatload::file_cache::cache_t cache;
     std::wifstream in(file);
 
     std::wstring f;
-    unsigned long long wt;
+    std::uint_least64_t wt;
     while (std::getline(in, f, L'\t')) {
         in >> wt;
         in.ignore(std::numeric_limits<std::streamsize>::max(), L'\n');

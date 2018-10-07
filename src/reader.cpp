@@ -82,7 +82,7 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
         throw chatload::runtime_error(L"Failed to search for logs in " + log_folder);
     }
 
-    chatload::file_cache::type cache;
+    chatload::file_cache::cache_t cache;
     if (args.use_cache) {
         cache = chatload::file_cache::load_from_file(args.cache_file);
     }
