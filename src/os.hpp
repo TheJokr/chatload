@@ -29,6 +29,9 @@
 #define CHATLOAD_OS_H
 
 
+// C headers
+#include <cstdint>
+
 // Containers
 #include <string>
 
@@ -41,8 +44,8 @@ std::wstring GetDocumentsFolder();
 
 struct dir_entry {
     std::wstring name;
-    unsigned long long size;
-    unsigned long long write_time;
+    std::uint_least64_t size;
+    std::uint_least64_t write_time;
 
     explicit dir_entry(const WIN32_FIND_DATAW& data);
 };

@@ -24,6 +24,9 @@
 #define CHATLOAD_READER_H
 
 
+// C headers
+#include <cstdint>
+
 // Containers
 #include <string>
 
@@ -44,8 +47,8 @@ namespace reader {
 bool readUTF16LE(const std::wstring& path, std::wstring& buffer);
 
 struct read_stat {
-    unsigned long long files_read = 0;
-    unsigned long long bytes_read = 0;
+    std::uint_least64_t files_read = 0;
+    std::uint_least64_t bytes_read = 0;
     std::chrono::seconds duration;
 };
 

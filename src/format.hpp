@@ -26,6 +26,7 @@
 
 // C headers
 #include <cstdlib>
+#include <cstdint>
 #include <cwchar>
 
 // Streams
@@ -43,8 +44,8 @@
 
 namespace chatload {
 namespace format {
-inline std::pair<long double, std::string> format_size(unsigned long long bytes) {
-    long double size = static_cast<long double>(bytes);
+inline std::pair<long double, std::string> format_size(std::uint_least64_t bytes) {
+    auto size = static_cast<long double>(bytes);
 
     std::string prefix = "gigabyte";
     for (const auto val : { "byte", "kilobyte", "megabyte" }) {
