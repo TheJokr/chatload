@@ -33,13 +33,8 @@
 // WinAPI
 #include <Windows.h>
 #include <objbase.h>
-#include <shellapi.h>
 #include <ShlObj.h>
 
-
-bool chatload::os::SetTerminalTitle(const wchar_t* title) noexcept {
-    return SetConsoleTitleW(title);
-}
 
 std::wstring chatload::os::GetDocumentsFolder() {
     std::wstring path;
@@ -52,18 +47,6 @@ std::wstring chatload::os::GetDocumentsFolder() {
     }
 
     return path;
-}
-
-
-chatload::os::wargs::wargs() {
-    this->argv = CommandLineToArgvW(GetCommandLineW(), &this->argc);
-    if (this->argv == NULL) {
-        throw std::runtime_error("Error parsing command line (Code " + std::to_string(GetLastError()) + ")");
-    }
-}
-
-chatload::os::wargs::~wargs() {
-    LocalFree(this->argv);
 }
 
 

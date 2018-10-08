@@ -59,20 +59,14 @@
 #include "format.hpp"
 
 
-int main(int, char**) {
-    chatload::os::SetTerminalTitle(chatload::NAME);
+int wmain(int argc, wchar_t* argv[]) {
     chatload::cli::options args;
     try {
-        chatload::os::wargs wargs;
-        args = chatload::cli::parseArgs(wargs.size(), wargs.data());
+        args = chatload::cli::parseArgs(argc, argv);
     } catch (chatload::runtime_error& ex) {
         // Version/Help
         std::wcout << ex.what_wide() << std::endl;
         return 0;
-    } catch (std::runtime_error& ex) {
-        // wargs error
-        std::wcerr << "ERROR: " << ex.what() << std::endl;
-        return 1;
     } catch (std::logic_error& ex) {
         // boost::program_options error
         std::wcerr << "ERROR: " << ex.what() << std::endl;

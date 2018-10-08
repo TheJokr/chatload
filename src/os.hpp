@@ -37,24 +37,7 @@
 
 namespace chatload {
 namespace os {
-bool SetTerminalTitle(const wchar_t* title) noexcept;
 std::wstring GetDocumentsFolder();
-
-class wargs {
-private:
-    int argc;
-    wchar_t** argv;
-
-public:
-    wargs();
-    wargs(const wargs& other) = delete;
-    wargs(wargs&& other) noexcept = default;
-    ~wargs();
-    wargs& operator=(const wargs& other) = delete;
-    wargs& operator=(wargs&& other) noexcept = default;
-    int size() const noexcept { return this->argc; }
-    wchar_t** data() const noexcept { return this->argv; }
-};
 
 struct dir_entry {
     std::wstring name;
@@ -78,10 +61,13 @@ public:
                       bool enable_hidden = false, bool enable_system = false);
     dir_list(const dir_list& other) = delete;
     dir_list(dir_list&& other) noexcept;
+
     ~dir_list() { this->close(); }
     void close() noexcept;
+
     dir_list& operator=(const dir_list& other) = delete;
     dir_list& operator=(dir_list&& other) noexcept;
+
     bool fetch_file() noexcept;
     dir_entry get_file();
 };

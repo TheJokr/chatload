@@ -30,7 +30,6 @@
 namespace chatload {
 inline namespace constants {
 constexpr char VERSION[] = "2.0.0-dev";
-constexpr wchar_t NAME[] = L"Chatload";
 constexpr wchar_t CONFIGFILE[] = L"chatload.cfg";
 constexpr char CONFIG_HELP[] = "chatload.cfg";
 constexpr wchar_t CACHEFILE[] = L"filecache.tsv";
