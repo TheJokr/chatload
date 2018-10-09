@@ -18,6 +18,11 @@
  * along with chatload-client.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// WinAPI configuration
+#define WIN32_LEAN_AND_MEAN
+#define NTDDI_VERSION NTDDI_WIN7
+#define _WIN32_WINNT _WIN32_WINNT_WIN7
+
 // Forward declaration
 #include "os.hpp"
 
@@ -50,16 +55,17 @@ std::wstring chatload::os::GetDocumentsFolder() {
 }
 
 
-chatload::os::dir_entry::dir_entry(const WIN32_FIND_DATAW& data) {
-    this->name = data.cFileName;
-    this->size = (static_cast<DWORDLONG>(data.nFileSizeHigh) << 32) | data.nFileSizeLow;
-    this->write_time = (static_cast<DWORDLONG>(data.ftLastWriteTime.dwHighDateTime) << 32) |
-                        data.ftLastWriteTime.dwLowDateTime;
-}
+chatload::os::dir_entry::dir_entry(const WIN32_FIND_DATAW& data) : name(data.cFileName),
+        size((static_cast<DWORDLONG>(data.nFileSizeHigh) << 32) | data.nFileSizeLow),
+        write_time((static_cast<DWORDLONG>(data.ftLastWriteTime.dwHighDateTime) << 32) |
+                   data.ftLastWriteTime.dwLowDateTime) {}
 
 
-chatload::os::dir_list::dir_list(const std::wstring& dir, bool enable_dirs, bool enable_hidden, bool enable_system) {
-    this->hdl = FindFirstFileExW((dir + L'*').c_str(), FindExInfoBasic, &this->data,
+chatload::os::dir_list::dir_list() noexcept : initialized(false) {}
+
+chatload::os::dir_list::dir_list(const std::wstring& dir, bool enable_dirs, bool enable_hidden, bool enable_system) :
+        data(new WIN32_FIND_DATAW) {
+    this->hdl = FindFirstFileExW((dir + L'*').c_str(), FindExInfoBasic, this->data.get(),
                                  FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
     if (this->hdl == INVALID_HANDLE_VALUE) {
@@ -71,13 +77,17 @@ chatload::os::dir_list::dir_list(const std::wstring& dir, bool enable_dirs, bool
     if (!enable_dirs) { this->file_attrs |= FILE_ATTRIBUTE_DIRECTORY; }
     if (!enable_hidden) { this->file_attrs |= FILE_ATTRIBUTE_HIDDEN; }
     if (!enable_system) { this->file_attrs |= FILE_ATTRIBUTE_SYSTEM; }
-    this->file_buffered = !(this->data.dwFileAttributes & this->file_attrs);
+    this->file_buffered = !(this->data->dwFileAttributes & this->file_attrs);
 }
 
 chatload::os::dir_list::dir_list(chatload::os::dir_list&& other) noexcept :
         initialized(std::move(other.initialized)), file_buffered(std::move(other.file_buffered)),
         file_attrs(std::move(other.file_attrs)), data(std::move(other.data)), hdl(std::move(other.hdl)) {
     other.initialized = false;
+}
+
+chatload::os::dir_list::~dir_list() {
+    this->close();
 }
 
 void chatload::os::dir_list::close() noexcept {
@@ -106,8 +116,8 @@ bool chatload::os::dir_list::fetch_file() noexcept {
 
     // Explore files until either no more files are left
     // or a file that doesn't match file_attrs is found
-    while ((this->file_buffered = FindNextFileW(this->hdl, &this->data)) == true &&
-           (this->data.dwFileAttributes & this->file_attrs)) {}
+    while ((this->file_buffered = FindNextFileW(this->hdl, this->data.get())) == true &&
+           (this->data->dwFileAttributes & this->file_attrs)) {}
 
     return this->file_buffered;
 }
@@ -118,5 +128,5 @@ chatload::os::dir_entry chatload::os::dir_list::get_file() {
     }
     this->file_buffered = false;
 
-    return chatload::os::dir_entry(this->data);
+    return chatload::os::dir_entry(*(this->data));
 }

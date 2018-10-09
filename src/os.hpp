@@ -18,11 +18,6 @@
  * along with chatload-client.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// WinAPI configuration
-#define WIN32_LEAN_AND_MEAN
-#define NTDDI_VERSION NTDDI_WIN7
-#define _WIN32_WINNT _WIN32_WINNT_WIN7
-
 // Header guard
 #pragma once
 #ifndef CHATLOAD_OS_H
@@ -35,8 +30,11 @@
 // Containers
 #include <string>
 
-// WinAPI
-#include <Windows.h>
+// Utility
+#include <memory>
+
+// Forward declaration to avoid inclusion of Windows.h
+extern "C" typedef struct _WIN32_FIND_DATAW WIN32_FIND_DATAW;
 
 namespace chatload {
 namespace os {
@@ -54,18 +52,18 @@ class dir_list {
 private:
     bool initialized = false;
     bool file_buffered;
-    DWORD file_attrs;
-    WIN32_FIND_DATAW data;
-    HANDLE hdl;
+    std::uint_least32_t file_attrs;
+    std::unique_ptr<WIN32_FIND_DATAW> data;
+    void* hdl;
 
 public:
-    dir_list() noexcept : initialized(false) {}
+    dir_list() noexcept;
     explicit dir_list(const std::wstring& dir, bool enable_dirs = false,
                       bool enable_hidden = false, bool enable_system = false);
     dir_list(const dir_list& other) = delete;
     dir_list(dir_list&& other) noexcept;
 
-    ~dir_list() { this->close(); }
+    ~dir_list();
     void close() noexcept;
 
     dir_list& operator=(const dir_list& other) = delete;
