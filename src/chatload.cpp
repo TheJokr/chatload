@@ -86,7 +86,7 @@ int wmain(int argc, wchar_t* argv[]) {
 
     chatload::reader::read_stat res;
     const std::wregex regex(args.regex, std::wregex::optimize | std::wregex::ECMAScript);
-    const auto file_cb = [](chatload::os::dir_entry& file) {
+    const auto file_cb = [](const chatload::os::dir_entry& file) {
         std::wcout << file.name << " (" << file.size << " byte" << (file.size != 1 ? "s)" : ")") << "\n";
     };
 

@@ -40,6 +40,9 @@
 #include <objbase.h>
 #include <ShlObj.h>
 
+// chatload components
+#include "deref_proxy.hpp"
+
 
 std::wstring chatload::os::GetDocumentsFolder() {
     std::wstring path;
@@ -61,72 +64,122 @@ chatload::os::dir_entry::dir_entry(const WIN32_FIND_DATAW& data) : name(data.cFi
                    data.ftLastWriteTime.dwLowDateTime) {}
 
 
-chatload::os::dir_list::dir_list() noexcept : initialized(false) {}
+chatload::os::dir_handle::dir_handle() noexcept : status(CLOSED) {}
 
-chatload::os::dir_list::dir_list(const std::wstring& dir, bool enable_dirs, bool enable_hidden, bool enable_system) :
-        data(new WIN32_FIND_DATAW) {
-    this->hdl = FindFirstFileExW((dir + L'*').c_str(), FindExInfoBasic, this->data.get(),
-                                 FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
+chatload::os::dir_handle::dir_handle(const std::wstring& dir, bool enable_dirs,
+                                     bool enable_hidden, bool enable_system) :
+        status(ACTIVE), file_attrs(0), find_data(new WIN32_FIND_DATAW) {
+    this->find_hdl = FindFirstFileExW((dir + L'*').c_str(), FindExInfoBasic, this->find_data.get(),
+                                      FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
-    if (this->hdl == INVALID_HANDLE_VALUE) {
-        throw std::runtime_error("Error opening dir_list (Code " + std::to_string(GetLastError()) + ")");
+    if (this->find_hdl == INVALID_HANDLE_VALUE) {
+        throw std::runtime_error("Error opening dir_handle (Code " + std::to_string(GetLastError()) + ")");
     }
 
-    this->initialized = true;
-    this->file_attrs = 0;
     if (!enable_dirs) { this->file_attrs |= FILE_ATTRIBUTE_DIRECTORY; }
     if (!enable_hidden) { this->file_attrs |= FILE_ATTRIBUTE_HIDDEN; }
     if (!enable_system) { this->file_attrs |= FILE_ATTRIBUTE_SYSTEM; }
-    this->file_buffered = !(this->data->dwFileAttributes & this->file_attrs);
+
+    if (this->find_data->dwFileAttributes & this->file_attrs) { this->fetch_next(); }
+    else { this->cur_entry = *(this->find_data); }
 }
 
-chatload::os::dir_list::dir_list(chatload::os::dir_list&& other) noexcept :
-        initialized(std::move(other.initialized)), file_buffered(std::move(other.file_buffered)),
-        file_attrs(std::move(other.file_attrs)), data(std::move(other.data)), hdl(std::move(other.hdl)) {
-    other.initialized = false;
+chatload::os::dir_handle::dir_handle(chatload::os::dir_handle&& other) noexcept :
+        status(std::move(other.status)), file_attrs(std::move(other.file_attrs)),
+        cur_entry(std::move(other.cur_entry)), find_data(std::move(other.find_data)),
+        find_hdl(std::move(other.find_hdl)) {
+    other.status = CLOSED;
 }
 
-chatload::os::dir_list::~dir_list() {
-    this->close();
-}
-
-void chatload::os::dir_list::close() noexcept {
-    if (!this->initialized) { return; }
-
-    FindClose(this->hdl);
-    this->initialized = false;
-}
-
-chatload::os::dir_list& chatload::os::dir_list::operator=(chatload::os::dir_list&& other) noexcept {
+chatload::os::dir_handle& chatload::os::dir_handle::operator=(chatload::os::dir_handle&& other) noexcept {
     this->close();
 
-    this->initialized = std::move(other.initialized);
-    this->file_buffered = std::move(other.file_buffered);
+    this->status = std::move(other.status);
     this->file_attrs = std::move(other.file_attrs);
-    this->data = std::move(other.data);
-    this->hdl = std::move(other.hdl);
+    this->cur_entry = std::move(other.cur_entry);
+    this->find_data = std::move(other.find_data);
+    this->find_hdl = std::move(other.find_hdl);
 
-    other.initialized = false;
+    other.status = CLOSED;
     return *this;
 }
 
-bool chatload::os::dir_list::fetch_file() noexcept {
-    if (!this->initialized) { return false; }
-    if (this->file_buffered) { return true; }
+chatload::os::dir_handle::~dir_handle() { this->close(); }
+
+void chatload::os::dir_handle::close() noexcept {
+    if (this->status == CLOSED) { return; }
+
+    FindClose(this->find_hdl);
+    this->status = CLOSED;
+}
+
+chatload::os::dir_handle::iterator chatload::os::dir_handle::begin() noexcept {
+    return chatload::os::dir_handle::iterator(this);
+}
+
+chatload::os::dir_handle::iterator chatload::os::dir_handle::end() noexcept {
+    return chatload::os::dir_handle::iterator();
+}
+
+bool chatload::os::dir_handle::fetch_next() {
+    if (this->status != ACTIVE) { return false; }
 
     // Explore files until either no more files are left
     // or a file that doesn't match file_attrs is found
-    while ((this->file_buffered = FindNextFileW(this->hdl, this->data.get())) == true &&
-           (this->data->dwFileAttributes & this->file_attrs)) {}
+    bool ok;
+    while ((ok = FindNextFileW(this->find_hdl, this->find_data.get())) == true &&
+           (this->find_data->dwFileAttributes & this->file_attrs)) {}
 
-    return this->file_buffered;
-}
+    if (!ok) {
+        DWORD ec = GetLastError();
+        if (ec != ERROR_NO_MORE_FILES) {
+            throw std::runtime_error("Error retrieving next file in dir_handle (Code " + std::to_string(ec) + ")");
+        }
 
-chatload::os::dir_entry chatload::os::dir_list::get_file() {
-    if (!this->fetch_file()) {
-        throw std::runtime_error("Error retrieving next file in dir_list");
+        this->status = EXHAUSTED;
+    } else {
+        this->cur_entry = *(this->find_data);
     }
-    this->file_buffered = false;
 
-    return chatload::os::dir_entry(*(this->data));
+    return ok;
 }
+
+
+chatload::os::dir_iter::dir_iter(chatload::os::dir_handle* hdl_ref) noexcept : hdl_ref(hdl_ref) {}
+
+chatload::os::dir_iter& chatload::os::dir_iter::operator++() {
+    if (this->hdl_ref) { this->hdl_ref->fetch_next(); }
+    return *this;
+}
+
+chatload::deref_proxy<chatload::os::dir_iter::value_type> chatload::os::dir_iter::operator++(int) {
+    chatload::deref_proxy<dir_iter::value_type> res({});
+    if (this->hdl_ref) {
+        res = chatload::deref_proxy<dir_iter::value_type>(this->hdl_ref->cur_entry);
+    }
+
+    ++(*this);
+    return res;
+}
+
+chatload::os::dir_iter::reference chatload::os::dir_iter::operator*() noexcept {
+    return this->hdl_ref->cur_entry;
+}
+
+chatload::os::dir_iter::pointer chatload::os::dir_iter::operator->() noexcept {
+    return &this->hdl_ref->cur_entry;
+}
+
+bool chatload::os::dir_iter::handle_exhausted() const noexcept {
+    // dir_handle is considered exhausted for end sentinel (hdl_ref == nullptr)
+    return !this->hdl_ref || (this->hdl_ref->status == chatload::os::dir_handle::EXHAUSTED);
+}
+
+
+bool chatload::os::operator==(const dir_iter& lhs, const dir_iter& rhs) noexcept {
+    // 2 dir_iters compare equal iff both point to
+    // the same dir_handle or both dir_handle's are exhausted
+    return (lhs.hdl_ref == rhs.hdl_ref) || (lhs.handle_exhausted() && rhs.handle_exhausted());
+}
+
+bool chatload::os::operator!=(const dir_iter& lhs, const dir_iter& rhs) noexcept { return !(lhs == rhs); }

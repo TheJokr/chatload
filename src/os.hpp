@@ -32,6 +32,10 @@
 
 // Utility
 #include <memory>
+#include <iterator>
+
+// chatload components
+#include "deref_proxy.hpp"
 
 // Forward declaration to avoid inclusion of Windows.h
 extern "C" typedef struct _WIN32_FIND_DATAW WIN32_FIND_DATAW;
@@ -45,32 +49,63 @@ struct dir_entry {
     std::uint_least64_t size;
     std::uint_least64_t write_time;
 
-    explicit dir_entry(const WIN32_FIND_DATAW& data);
+    dir_entry() = default;
+    dir_entry(const WIN32_FIND_DATAW& find_data);
 };
 
-class dir_list {
+class dir_handle {
 private:
-    bool initialized = false;
-    bool file_buffered;
+    enum { CLOSED, ACTIVE, EXHAUSTED } status = CLOSED;
     std::uint_least32_t file_attrs;
-    std::unique_ptr<WIN32_FIND_DATAW> data;
-    void* hdl;
+    dir_entry cur_entry;
+    std::unique_ptr<WIN32_FIND_DATAW> find_data;
+    void* find_hdl;
+
+    bool fetch_next();
 
 public:
-    dir_list() noexcept;
-    explicit dir_list(const std::wstring& dir, bool enable_dirs = false,
-                      bool enable_hidden = false, bool enable_system = false);
-    dir_list(const dir_list& other) = delete;
-    dir_list(dir_list&& other) noexcept;
+    friend class dir_iter;
+    using iterator = dir_iter;
 
-    ~dir_list();
+    dir_handle() noexcept;
+    explicit dir_handle(const std::wstring& dir, bool enable_dirs = false,
+                        bool enable_hidden = false, bool enable_system = false);
+    dir_handle(const dir_handle& other) = delete;
+    dir_handle(dir_handle&& other) noexcept;
+
+    dir_handle& operator=(const dir_handle& other) = delete;
+    dir_handle& operator=(dir_handle&& other) noexcept;
+
+    ~dir_handle();
     void close() noexcept;
 
-    dir_list& operator=(const dir_list& other) = delete;
-    dir_list& operator=(dir_list&& other) noexcept;
+    iterator begin() noexcept;
+    iterator end() noexcept;
+};
 
-    bool fetch_file() noexcept;
-    dir_entry get_file();
+class dir_iter {
+private:
+    dir_handle* const hdl_ref;
+
+    bool handle_exhausted() const noexcept;
+
+    friend bool operator==(const dir_iter& lhs, const dir_iter& rhs) noexcept;
+    friend bool operator!=(const dir_iter& lhs, const dir_iter& rhs) noexcept;
+
+public:
+    using difference_type = std::ptrdiff_t;
+    using value_type = dir_entry;
+    using pointer = const dir_entry*;
+    using reference = const dir_entry&;
+    using iterator_category = std::input_iterator_tag;
+
+    explicit dir_iter(dir_handle* hdl_ref = nullptr) noexcept;
+
+    dir_iter& operator++();
+    chatload::deref_proxy<value_type> operator++(int);
+
+    reference operator*() noexcept;
+    pointer operator->() noexcept;
 };
 }  // namespace os
 }  // namespace chatload

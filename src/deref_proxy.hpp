@@ -20,43 +20,21 @@
 
 // Header guard
 #pragma once
-#ifndef CHATLOAD_READER_H
-#define CHATLOAD_READER_H
+#ifndef CHATLOAD_DEREF_PROXY_H
+#define CHATLOAD_DEREF_PROXY_H
 
-
-// C headers
-#include <cstdint>
-
-// Containers
-#include <string>
-
-// Utility
-#include <functional>
-#include <chrono>
-#include <regex>
-
-// lock-free queue
-#include "readerwriterqueue/readerwriterqueue.h"
-
-// chatload components
-#include "cli.hpp"
-#include "os.hpp"
 
 namespace chatload {
-namespace reader {
-bool readUTF16LE(const std::wstring& path, std::wstring& buffer);
+template<typename T>
+class deref_proxy {
+private:
+    T value;
 
-struct read_stat {
-    std::uint_least64_t files_read = 0;
-    std::uint_least64_t bytes_read = 0;
-    std::chrono::seconds duration;
+public:
+    explicit deref_proxy(T value) : value(value) {}
+    T operator*() const { return this->value; }
 };
-
-read_stat readLogs(chatload::cli::options& args, const std::wregex& pattern,
-                   moodycamel::ReaderWriterQueue<std::wstring>& queue,
-                   std::function<void(const chatload::os::dir_entry&)> file_cb = {});
-}  // namespace reader
 }  // namespace chatload
 
 
-#endif  // CHATLOAD_READER_H
+#endif  // CHATLOAD_DEREF_PROXY_H

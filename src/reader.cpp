@@ -67,7 +67,7 @@ bool chatload::reader::readUTF16LE(const std::wstring& path, std::wstring& buffe
 
 chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& args, const std::wregex& pattern,
                                                        moodycamel::ReaderWriterQueue<std::wstring>& queue,
-                                                       std::function<void(chatload::os::dir_entry&)> file_cb) {
+                                                       std::function<void(const chatload::os::dir_entry&)> file_cb) {
     chatload::reader::read_stat res;
     const auto start_time = std::chrono::system_clock::now();
 
@@ -75,9 +75,9 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
         return chatload::os::GetDocumentsFolder() + LR"(\EVE\logs\Chatlogs\)";
     });
 
-    chatload::os::dir_list log_dir;
+    chatload::os::dir_handle log_dir;
     try {
-        log_dir = chatload::os::dir_list(log_folder);
+        log_dir = chatload::os::dir_handle(log_folder);
     } catch (std::runtime_error&) {
         throw chatload::runtime_error(L"Failed to search for logs in " + log_folder);
     }
@@ -87,8 +87,7 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
         cache = chatload::file_cache::load_from_file(args.cache_file);
     }
 
-    while (log_dir.fetch_file()) {
-        chatload::os::dir_entry file = log_dir.get_file();
+    for (const chatload::os::dir_entry& file : log_dir) {
         if (cache[file.name] >= file.write_time || !std::regex_match(file.name, pattern)) { continue; }
 
         // If readUTF16LE returns true, buf.empty() always returns false
