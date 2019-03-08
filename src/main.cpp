@@ -60,10 +60,6 @@ int wmain(int argc, wchar_t* argv[]) {
     chatload::cli::options args;
     try {
         args = chatload::cli::parseArgs(argc, argv);
-    } catch (chatload::runtime_error& ex) {
-        // Version/Help
-        std::wcout << ex.what_wide() << std::endl;
-        return 0;
     } catch (std::logic_error& ex) {
         // boost::program_options error
         std::wcerr << "ERROR: " << ex.what() << std::endl;

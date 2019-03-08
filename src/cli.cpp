@@ -21,7 +21,11 @@
 // Forward declaration
 #include "cli.hpp"
 
+// C headers
+#include <cstdlib>
+
 // Streams
+#include <iostream>
 #include <fstream>
 #include <sstream>
 
@@ -106,28 +110,28 @@ chatload::cli::options chatload::cli::parseArgs(int argc, wchar_t* argv[]) {
     parseConfig(vm["config"].as<std::wstring>(), vm);
     po::notify(vm);
 
-    std::wostringstream out;
     bool ver = vm.count("version"), help = vm.count("help");
     if (ver) {
-        out << argv[0] << " version " << chatload::VERSION << "\n"
-            << "Copyright (C) 2015-2018  Leo Bloecher\n"
-            << "This program comes with ABSOLUTELY NO WARRANTY.\n"
-            << "This is free software, and you are welcome to redistribute it under certain conditions.";
+        std::wcout << argv[0] << " version " << chatload::VERSION << "\n"
+                   << "Copyright (C) 2015-2019  Leo Bloecher\n"
+                   << "This program comes with ABSOLUTELY NO WARRANTY.\n"
+                   << "This is free software, and you are welcome to redistribute it under certain conditions."
+                   << std::endl;
     }
 
     if (help) {
-        if (ver) { out << "\n\n"; }
+        if (ver) { std::wcout << "\n"; }
 
         std::stringstream ss;
         ss << visible_options;
         std::string desc(ss.str());
         desc.pop_back();
 
-        out << "Usage: " << argv[0] << " [OPTION]... [path to EVE logs]\n\n"
-            << desc.c_str();
+        std::wcout << "Usage: " << argv[0] << " [OPTION]... [path to EVE logs]\n\n"
+                   << desc.c_str() << std::endl;
     }
 
-    if (ver || help) { throw chatload::runtime_error(out.str()); }
+    if (ver || help) { std::exit(0); }
 
     return { vm.count("verbose") != 0, vm.count("force") == 0, vm["regex"].as<std::wstring>(),
              vm["cache"].as<std::wstring>(), std::move(log_path), parseHosts(vm) };
