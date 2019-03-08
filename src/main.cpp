@@ -18,9 +18,6 @@
  * along with chatload-client.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Forward declaration
-#include "chatload.hpp"
-
 // Streams
 #include <iostream>
 
