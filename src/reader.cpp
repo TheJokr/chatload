@@ -71,10 +71,7 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
     chatload::reader::read_stat res;
     const auto start_time = std::chrono::system_clock::now();
 
-    std::wstring log_folder = args.log_folder.value_or_eval([] {
-        return chatload::os::GetDocumentsFolder() + LR"(\EVE\logs\Chatlogs\)";
-    });
-
+    std::wstring log_folder = args.log_folder.value_or_eval(chatload::os::getLogFolder);
     chatload::os::dir_handle log_dir;
     try {
         log_dir = chatload::os::dir_handle(log_folder);
@@ -87,6 +84,7 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
         cache = chatload::file_cache::load_from_file(args.cache_file);
     }
 
+    log_folder += L'\\';
     for (const chatload::os::dir_entry& file : log_dir) {
         if (cache[file.name] >= file.write_time || !std::regex_match(file.name, pattern)) { continue; }
 

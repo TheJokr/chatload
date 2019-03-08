@@ -44,7 +44,7 @@
 #include "deref_proxy.hpp"
 
 
-std::wstring chatload::os::GetDocumentsFolder() {
+std::wstring chatload::os::getLogFolder() {
     std::wstring path;
     PWSTR winres;
 
@@ -52,6 +52,7 @@ std::wstring chatload::os::GetDocumentsFolder() {
     if (SUCCEEDED(hr)) {
         path = winres;
         CoTaskMemFree(winres);
+        path += LR"(\EVE\logs\Chatlogs)";
     }
 
     return path;
@@ -69,7 +70,7 @@ chatload::os::dir_handle::dir_handle() noexcept : status(CLOSED) {}
 chatload::os::dir_handle::dir_handle(const std::wstring& dir, bool enable_dirs,
                                      bool enable_hidden, bool enable_system) :
         status(ACTIVE), file_attrs(0), find_data(new WIN32_FIND_DATAW) {
-    this->find_hdl = FindFirstFileExW((dir + L'*').c_str(), FindExInfoBasic, this->find_data.get(),
+    this->find_hdl = FindFirstFileExW((dir + L"\\*").c_str(), FindExInfoBasic, this->find_data.get(),
                                       FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
     if (this->find_hdl == INVALID_HANDLE_VALUE) {

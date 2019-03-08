@@ -42,7 +42,7 @@ extern "C" typedef struct _WIN32_FIND_DATAW WIN32_FIND_DATAW;
 
 namespace chatload {
 namespace os {
-std::wstring GetDocumentsFolder();
+std::wstring getLogFolder();
 
 struct dir_entry {
     std::wstring name;
