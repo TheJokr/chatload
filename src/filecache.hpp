@@ -33,7 +33,7 @@
 
 namespace chatload {
 namespace file_cache {
-typedef std::unordered_map<std::wstring, std::uint_least64_t> cache_t;
+using cache_t = std::unordered_map<std::wstring, std::uint_least64_t>;
 bool save_to_file(const cache_t& cache, const std::wstring& file);
 cache_t load_from_file(const std::wstring& file);
 }  // namespace file_cache
