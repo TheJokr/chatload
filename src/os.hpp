@@ -37,9 +37,6 @@
 // chatload components
 #include "deref_proxy.hpp"
 
-// Forward declaration to avoid inclusion of Windows.h
-extern "C" typedef struct _WIN32_FIND_DATAW WIN32_FIND_DATAW;
-
 namespace chatload {
 namespace os {
 std::wstring getLogFolder();
@@ -48,18 +45,15 @@ struct dir_entry {
     std::wstring name;
     std::uint_least64_t size;
     std::uint_least64_t write_time;
-
-    dir_entry() = default;
-    dir_entry(const WIN32_FIND_DATAW& find_data);
 };
 
 class dir_handle {
 private:
+    struct iter_state;
+
     enum { CLOSED, ACTIVE, EXHAUSTED } status = CLOSED;
-    std::uint_least32_t file_attrs;
+    std::unique_ptr<iter_state> state;
     dir_entry cur_entry;
-    std::unique_ptr<WIN32_FIND_DATAW> find_data;
-    void* find_hdl;
 
     bool fetch_next();
 

@@ -26,6 +26,9 @@
 // Forward declaration
 #include "os.hpp"
 
+// C headers
+#include <cstdint>
+
 // Containers
 #include <string>
 
@@ -59,36 +62,44 @@ std::wstring chatload::os::getLogFolder() {
 }
 
 
-chatload::os::dir_entry::dir_entry(const WIN32_FIND_DATAW& data) : name(data.cFileName),
-        size((static_cast<DWORDLONG>(data.nFileSizeHigh) << 32) | data.nFileSizeLow),
-        write_time((static_cast<DWORDLONG>(data.ftLastWriteTime.dwHighDateTime) << 32) |
-                   data.ftLastWriteTime.dwLowDateTime) {}
+namespace {
+chatload::os::dir_entry dir_entry_from_find_data(const WIN32_FIND_DATAW& data) {
+    return { data.cFileName, (static_cast<DWORDLONG>(data.nFileSizeHigh) << 32) | data.nFileSizeLow,
+             (static_cast<DWORDLONG>(data.ftLastWriteTime.dwHighDateTime) << 32) | data.ftLastWriteTime.dwLowDateTime };
+}
+}  // Anonymous namespace
+
+
+struct chatload::os::dir_handle::iter_state {
+    std::uint_least32_t file_attrs;
+    WIN32_FIND_DATAW find_data;
+    void* find_hdl;
+};
 
 
 chatload::os::dir_handle::dir_handle() noexcept : status(CLOSED) {}
 
 chatload::os::dir_handle::dir_handle(const std::wstring& dir, bool enable_dirs,
                                      bool enable_hidden, bool enable_system) :
-        status(ACTIVE), file_attrs(0), find_data(new WIN32_FIND_DATAW) {
-    this->find_hdl = FindFirstFileExW((dir + L"\\*").c_str(), FindExInfoBasic, this->find_data.get(),
-                                      FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
+        status(ACTIVE), state(new iter_state) {
+    this->state->file_attrs = 0;
+    this->state->find_hdl = FindFirstFileExW((dir + L"\\*").c_str(), FindExInfoBasic, &this->state->find_data,
+                                             FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
-    if (this->find_hdl == INVALID_HANDLE_VALUE) {
+    if (this->state->find_hdl == INVALID_HANDLE_VALUE) {
         throw std::runtime_error("Error opening dir_handle (Code " + std::to_string(GetLastError()) + ")");
     }
 
-    if (!enable_dirs) { this->file_attrs |= FILE_ATTRIBUTE_DIRECTORY; }
-    if (!enable_hidden) { this->file_attrs |= FILE_ATTRIBUTE_HIDDEN; }
-    if (!enable_system) { this->file_attrs |= FILE_ATTRIBUTE_SYSTEM; }
+    if (!enable_dirs) { this->state->file_attrs |= FILE_ATTRIBUTE_DIRECTORY; }
+    if (!enable_hidden) { this->state->file_attrs |= FILE_ATTRIBUTE_HIDDEN; }
+    if (!enable_system) { this->state->file_attrs |= FILE_ATTRIBUTE_SYSTEM; }
 
-    if (this->find_data->dwFileAttributes & this->file_attrs) { this->fetch_next(); }
-    else { this->cur_entry = *(this->find_data); }
+    if (this->state->find_data.dwFileAttributes & this->state->file_attrs) { this->fetch_next(); }
+    else { this->cur_entry = dir_entry_from_find_data(this->state->find_data); }
 }
 
 chatload::os::dir_handle::dir_handle(chatload::os::dir_handle&& other) noexcept :
-        status(std::move(other.status)), file_attrs(std::move(other.file_attrs)),
-        cur_entry(std::move(other.cur_entry)), find_data(std::move(other.find_data)),
-        find_hdl(std::move(other.find_hdl)) {
+        status(std::move(other.status)), state(std::move(other.state)), cur_entry(std::move(other.cur_entry)) {
     other.status = CLOSED;
 }
 
@@ -96,10 +107,8 @@ chatload::os::dir_handle& chatload::os::dir_handle::operator=(chatload::os::dir_
     this->close();
 
     this->status = std::move(other.status);
-    this->file_attrs = std::move(other.file_attrs);
+    this->state = std::move(other.state);
     this->cur_entry = std::move(other.cur_entry);
-    this->find_data = std::move(other.find_data);
-    this->find_hdl = std::move(other.find_hdl);
 
     other.status = CLOSED;
     return *this;
@@ -110,7 +119,7 @@ chatload::os::dir_handle::~dir_handle() { this->close(); }
 void chatload::os::dir_handle::close() noexcept {
     if (this->status == CLOSED) { return; }
 
-    FindClose(this->find_hdl);
+    FindClose(this->state->find_hdl);
     this->status = CLOSED;
 }
 
@@ -128,8 +137,8 @@ bool chatload::os::dir_handle::fetch_next() {
     // Explore files until either no more files are left
     // or a file that doesn't match file_attrs is found
     bool ok;
-    while ((ok = FindNextFileW(this->find_hdl, this->find_data.get())) == true &&
-           (this->find_data->dwFileAttributes & this->file_attrs)) {}
+    while ((ok = FindNextFileW(this->state->find_hdl, &this->state->find_data)) == true &&
+           (this->state->find_data.dwFileAttributes & this->state->file_attrs)) {}
 
     if (!ok) {
         DWORD ec = GetLastError();
@@ -139,7 +148,7 @@ bool chatload::os::dir_handle::fetch_next() {
 
         this->status = EXHAUSTED;
     } else {
-        this->cur_entry = *(this->find_data);
+        this->cur_entry = dir_entry_from_find_data(this->state->find_data);
     }
 
     return ok;
