@@ -47,6 +47,8 @@ struct dir_entry {
     std::uint_least64_t write_time;
 };
 
+class dir_iter;
+
 class dir_handle {
 private:
     struct iter_state;
