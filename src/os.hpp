@@ -27,22 +27,20 @@
 // C headers
 #include <cstdint>
 
-// Containers
-#include <string>
-
 // Utility
 #include <memory>
 #include <iterator>
 
 // chatload components
+#include "common.hpp"
 #include "deref_proxy.hpp"
 
 namespace chatload {
 namespace os {
-std::wstring getLogFolder();
+chatload::string getLogFolder();
 
 struct dir_entry {
-    std::wstring name;
+    chatload::string name;
     std::uint_least64_t size;
     std::uint_least64_t write_time;
 };
@@ -64,7 +62,7 @@ public:
     using iterator = dir_iter;
 
     dir_handle() noexcept;
-    explicit dir_handle(const std::wstring& dir, bool enable_dirs = false,
+    explicit dir_handle(const chatload::string& dir, bool enable_dirs = false,
                         bool enable_hidden = false, bool enable_system = false);
     dir_handle(const dir_handle& other) = delete;
     dir_handle(dir_handle&& other) noexcept;

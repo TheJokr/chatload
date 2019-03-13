@@ -27,17 +27,20 @@
 // C headers
 #include <cstdint>
 
+// chatload components
+#include "common.hpp"
+
 namespace chatload {
 inline namespace constants {
 constexpr char VERSION[] = "2.0.0-dev";
-constexpr wchar_t CONFIGFILE[] = L"chatload.cfg";
+constexpr chatload::char_t CONFIGFILE[] = CHATLOAD_STRING("chatload.cfg");
 constexpr char CONFIG_HELP[] = "chatload.cfg";
-constexpr wchar_t CACHEFILE[] = L"filecache.tsv";
+constexpr chatload::char_t CACHEFILE[] = CHATLOAD_STRING("filecache.tsv");
 constexpr char CACHE_HELP[] = "filecache.tsv";
 constexpr wchar_t DEFAULTCONFIG[] = LR"({"POST": [{"host": "https://api.dashsec.com", "resource": "/charDump.php", )"
                                     LR"("parameter": "name"}], "regex": ".*"})";
-constexpr wchar_t DEFAULTHOST[] = L"api.dashsec.com";
-constexpr std::uint_least16_t DEFAULTPORT = 36643;
+constexpr char DEFAULTHOST[] = "api.dashsec.com";
+constexpr char DEFAULTPORT[] = "36643";
 }  // namespace constants
 }  // namespace chatload
 

@@ -39,12 +39,13 @@
 #include "readerwriterqueue/readerwriterqueue.h"
 
 // chatload components
+#include "common.hpp"
 #include "cli.hpp"
 #include "os.hpp"
 
 namespace chatload {
 namespace reader {
-bool readUTF16LE(const std::wstring& path, std::wstring& buffer);
+bool readUTF16LE(const chatload::string& path, std::wstring& buffer);
 
 struct read_stat {
     std::uint_least64_t files_read = 0;
@@ -52,7 +53,7 @@ struct read_stat {
     std::chrono::seconds duration;
 };
 
-read_stat readLogs(chatload::cli::options& args, const std::wregex& pattern,
+read_stat readLogs(chatload::cli::options& args, const std::basic_regex<chatload::char_t>& pattern,
                    moodycamel::ReaderWriterQueue<std::wstring>& queue,
                    std::function<void(const chatload::os::dir_entry&)> file_cb = {});
 }  // namespace reader

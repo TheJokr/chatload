@@ -40,6 +40,7 @@
 #include "readerwriterqueue/readerwriterqueue.h"
 
 // chatload components
+#include "common.hpp"
 #include "exception.hpp"
 #include "cli.hpp"
 #include "os.hpp"
@@ -48,8 +49,8 @@
 
 // x86 sports a little-endian memory architecture,
 // thus we are able to load the file's content into memory bytewise
-bool chatload::reader::readUTF16LE(const std::wstring& path, std::wstring& buffer) {
-    std::ifstream in(path, std::fstream::binary | std::fstream::ate);
+bool chatload::reader::readUTF16LE(const chatload::string& path, std::wstring& buffer) {
+    std::ifstream in(path, std::ifstream::binary | std::ifstream::ate);
     if (!in) { return false; }
 
     std::size_t size = in.tellg();
@@ -57,7 +58,7 @@ bool chatload::reader::readUTF16LE(const std::wstring& path, std::wstring& buffe
 
     // Ignore BOM
     size -= 2;
-    in.seekg(2, std::fstream::beg);
+    in.seekg(2, std::ifstream::beg);
     buffer.resize(size / 2);
 
     // std::wstring is guaranteed to use contiguous memory
@@ -65,18 +66,19 @@ bool chatload::reader::readUTF16LE(const std::wstring& path, std::wstring& buffe
     return true;
 }
 
-chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& args, const std::wregex& pattern,
+chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& args,
+                                                       const std::basic_regex<chatload::char_t>& pattern,
                                                        moodycamel::ReaderWriterQueue<std::wstring>& queue,
                                                        std::function<void(const chatload::os::dir_entry&)> file_cb) {
     chatload::reader::read_stat res;
     const auto start_time = std::chrono::system_clock::now();
 
-    std::wstring log_folder = args.log_folder.value_or_eval(chatload::os::getLogFolder);
+    chatload::string log_folder = args.log_folder.value_or_eval(chatload::os::getLogFolder);
     chatload::os::dir_handle log_dir;
     try {
         log_dir = chatload::os::dir_handle(log_folder);
     } catch (std::runtime_error&) {
-        throw chatload::runtime_error(L"Failed to search for logs in " + log_folder);
+        throw chatload::runtime_error(CHATLOAD_STRING("Failed to search for logs in ") + log_folder);
     }
 
     chatload::file_cache::cache_t cache;
@@ -84,7 +86,7 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
         cache = chatload::file_cache::load_from_file(args.cache_file);
     }
 
-    log_folder += L'\\';
+    log_folder += CHATLOAD_PATH_SEP;
     for (const chatload::os::dir_entry& file : log_dir) {
         if (cache[file.name] >= file.write_time || !std::regex_match(file.name, pattern)) { continue; }
 

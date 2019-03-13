@@ -43,8 +43,11 @@
 #include <objbase.h>
 #include <ShlObj.h>
 
+// chatload components
+#include "common.hpp"
 
-std::wstring chatload::os::getLogFolder() {
+
+chatload::string chatload::os::getLogFolder() {
     std::wstring path;
     PWSTR winres;
 
@@ -76,7 +79,7 @@ struct chatload::os::dir_handle::iter_state {
 
 chatload::os::dir_handle::dir_handle() noexcept : status(CLOSED) {}
 
-chatload::os::dir_handle::dir_handle(const std::wstring& dir, bool enable_dirs,
+chatload::os::dir_handle::dir_handle(const chatload::string& dir, bool enable_dirs,
                                      bool enable_hidden, bool enable_system) :
         status(ACTIVE), state(new iter_state) {
     this->state->file_attrs = 0;

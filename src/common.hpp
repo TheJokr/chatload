@@ -20,30 +20,35 @@
 
 // Header guard
 #pragma once
-#ifndef CHATLOAD_EXCEPTION_H
-#define CHATLOAD_EXCEPTION_H
+#ifndef CHATLOAD_COMMON_H
+#define CHATLOAD_COMMON_H
 
 
-// Exceptions
-#include <exception>
+// Streams
+#include <iostream>
 
-// chatload components
-#include "common.hpp"
+// Containers
+#include <string>
 
 namespace chatload {
-inline namespace exception {
-class runtime_error : public std::exception {
-private:
-    chatload::string msg;
+#ifdef _WIN32
+using char_t = wchar_t;
+#define CHATLOAD_STRING(str) L##str
+#define CHATLOAD_COUT ::std::wcout
+#define CHATLOAD_CIN ::std::wcin
+#define CHATLOAD_CERR ::std::wcerr
+#define CHATLOAD_PATH_SEP CHATLOAD_STRING('\\')
+#else  // !_WIN32
+using char_t = char;
+#define CHATLOAD_STRING(str) str
+#define CHATLOAD_COUT ::std::cout
+#define CHATLOAD_CIN ::std::cin
+#define CHATLOAD_CERR ::std::cerr
+#define CHATLOAD_PATH_SEP CHATLOAD_STRING('/')
+#endif  // _WIN32
 
-public:
-    explicit runtime_error(const chatload::string& what) : msg(what) {}
-    explicit runtime_error(chatload::string&& what) noexcept : msg(what) {}
-    const char* what() const noexcept final { return "See what_cl"; }
-    virtual chatload::string what_cl() const { return this->msg; }
-};
-}  // namespace exception
+using string = std::basic_string<char_t>;
 }  // namespace chatload
 
 
-#endif  // CHATLOAD_EXCEPTION_H
+#endif  // CHATLOAD_COMMON_H

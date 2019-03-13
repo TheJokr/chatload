@@ -28,14 +28,16 @@
 #include <cstdint>
 
 // Containers
-#include <string>
 #include <unordered_map>
+
+// chatload components
+#include "common.hpp"
 
 namespace chatload {
 namespace file_cache {
-using cache_t = std::unordered_map<std::wstring, std::uint_least64_t>;
-bool save_to_file(const cache_t& cache, const std::wstring& file);
-cache_t load_from_file(const std::wstring& file);
+using cache_t = std::unordered_map<chatload::string, std::uint_least64_t>;
+bool save_to_file(const cache_t& cache, const chatload::string& file);
+cache_t load_from_file(const chatload::string& file);
 }  // namespace file_cache
 }  // namespace chatload
 

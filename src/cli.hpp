@@ -35,25 +35,27 @@
 #include <boost/optional.hpp>
 
 // chatload components
+#include "common.hpp"
 #include "constants.hpp"
 
 namespace chatload {
 namespace cli {
 struct host {
-    std::wstring name;
-    std::uint_least16_t port;
+    std::string name;
+    // Boost.Asio expects port as a string
+    std::string port;
 };
 
 struct options {
     bool verbose = false;
     bool use_cache = true;
-    std::wstring regex;
-    std::wstring cache_file = chatload::CACHEFILE;
-    boost::optional<std::wstring> log_folder;
+    chatload::string regex;
+    chatload::string cache_file = chatload::CACHEFILE;
+    boost::optional<chatload::string> log_folder;
     std::vector<host> hosts;
 };
 
-options parseArgs(int argc, wchar_t* argv[]);
+options parseArgs(int argc, chatload::char_t* argv[]);
 }  // namespace cli
 }  // namespace chatload
 

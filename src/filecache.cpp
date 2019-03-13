@@ -27,34 +27,34 @@
 // Streams
 #include <fstream>
 
-// Containers
-#include <string>
-
 // Utility
 #include <utility>
 #include <limits>
 
+// chatload components
+#include "common.hpp"
 
-bool chatload::file_cache::save_to_file(const chatload::file_cache::cache_t& cache, const std::wstring& file) {
-    std::wofstream out(file, std::fstream::trunc);
+
+bool chatload::file_cache::save_to_file(const chatload::file_cache::cache_t& cache, const chatload::string& file) {
+    std::basic_ofstream<chatload::char_t> out(file, std::basic_ofstream<chatload::char_t>::trunc);
     if (!out) { return false; }
 
     for (const auto& val : cache) {
-        out << val.first << L'\t' << val.second << L'\n';
+        out << val.first << CHATLOAD_STRING('\t') << val.second << CHATLOAD_STRING('\n');
     }
 
     return true;
 }
 
-chatload::file_cache::cache_t chatload::file_cache::load_from_file(const std::wstring& file) {
+chatload::file_cache::cache_t chatload::file_cache::load_from_file(const chatload::string& file) {
     chatload::file_cache::cache_t cache;
-    std::wifstream in(file);
+    std::basic_ifstream<chatload::char_t> in(file);
 
-    std::wstring f;
+    chatload::string f;
     std::uint_least64_t wt;
-    while (std::getline(in, f, L'\t')) {
+    while (std::getline(in, f, CHATLOAD_STRING('\t'))) {
         in >> wt;
-        in.ignore(std::numeric_limits<std::streamsize>::max(), L'\n');
+        in.ignore(std::numeric_limits<std::streamsize>::max(), CHATLOAD_STRING('\n'));
 
         cache.emplace(std::move(f), wt);
     }
