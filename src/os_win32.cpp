@@ -26,9 +26,6 @@
 // Forward declaration
 #include "os.hpp"
 
-// C headers
-#include <cstdint>
-
 // Containers
 #include <string>
 
@@ -71,7 +68,7 @@ chatload::os::dir_entry dir_entry_from_find_data(const WIN32_FIND_DATAW& data) {
 
 
 struct chatload::os::dir_handle::iter_state {
-    std::uint_least32_t file_attrs;
+    DWORD file_attrs;
     WIN32_FIND_DATAW find_data;
     void* find_hdl;
 };
@@ -81,8 +78,7 @@ chatload::os::dir_handle::dir_handle() noexcept : status(CLOSED) {}
 
 chatload::os::dir_handle::dir_handle(const chatload::string& dir, bool enable_dirs,
                                      bool enable_hidden, bool enable_system) :
-        status(ACTIVE), state(new iter_state) {
-    this->state->file_attrs = 0;
+        status(ACTIVE), state(new iter_state{ 0, {}, {} }) {
     this->state->find_hdl = FindFirstFileExW((dir + L"\\*").c_str(), FindExInfoBasic, &this->state->find_data,
                                              FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
