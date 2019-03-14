@@ -123,14 +123,6 @@ void chatload::os::dir_handle::close() noexcept {
     this->status = CLOSED;
 }
 
-chatload::os::dir_handle::iterator chatload::os::dir_handle::begin() noexcept {
-    return chatload::os::dir_handle::iterator(this);
-}
-
-chatload::os::dir_handle::iterator chatload::os::dir_handle::end() noexcept {
-    return chatload::os::dir_handle::iterator();
-}
-
 bool chatload::os::dir_handle::fetch_next() {
     if (this->status != ACTIVE) { return false; }
 

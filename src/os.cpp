@@ -25,6 +25,15 @@
 #include "deref_proxy.hpp"
 
 
+chatload::os::dir_handle::iterator chatload::os::dir_handle::begin() noexcept {
+    return chatload::os::dir_handle::iterator(this);
+}
+
+chatload::os::dir_handle::iterator chatload::os::dir_handle::end() noexcept {
+    return chatload::os::dir_handle::iterator();
+}
+
+
 chatload::os::dir_iter::dir_iter(chatload::os::dir_handle* hdl_ref) noexcept : hdl_ref(hdl_ref) {}
 
 chatload::os::dir_iter& chatload::os::dir_iter::operator++() {
