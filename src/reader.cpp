@@ -53,7 +53,7 @@ bool chatload::reader::readUTF16LE(const chatload::string& path, std::wstring& b
     std::ifstream in(path, std::ifstream::binary | std::ifstream::ate);
     if (!in) { return false; }
 
-    std::size_t size = in.tellg();
+    auto size = static_cast<std::size_t>(in.tellg());
     if (size <= 2 || size % 2 != 0) { return false; }
 
     // Ignore BOM
