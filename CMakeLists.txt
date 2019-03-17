@@ -1,7 +1,7 @@
 # CMake 3.8 added cxx_std_* features
 cmake_minimum_required(VERSION 3.8)
 
-project(chatload-client VERSION 2.0.0 LANGUAGES CXX)
+project(chatload-client VERSION 2.0.0 LANGUAGES C CXX)
 # Disable C++ vendor extensions by default
 set(CMAKE_CXX_EXTENSIONS OFF)
 # Use static runtime with MSVC by default
@@ -26,6 +26,12 @@ if (WIN32)
 endif()
 find_package(OpenSSL REQUIRED)
 
+# LZ4 (with framing)
+add_library(lz4 STATIC EXCLUDE_FROM_ALL "ext/lz4/lib/lz4.c" "ext/lz4/lib/lz4hc.c"
+                "ext/lz4/lib/lz4frame.c" "ext/lz4/lib/xxhash.c")
+target_compile_definitions(lz4 PRIVATE "XXH_NAMESPACE=LZ4_")
+target_include_directories(lz4 INTERFACE "ext/lz4/lib")
+
 add_executable(chatload "src/main.cpp" "src/cli.cpp" "src/reader.cpp" "src/os.cpp"
                    "src/filecache.cpp" "src/consumer.cpp" "src/network.cpp")
 if (WIN32)
@@ -44,3 +50,4 @@ endif()
 target_link_libraries(chatload PRIVATE Boost::disable_autolinking Boost::boost
                                        Boost::system Boost::program_options)
 target_link_libraries(chatload PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(chatload PRIVATE lz4)
