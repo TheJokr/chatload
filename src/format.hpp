@@ -27,7 +27,7 @@
 // C headers
 #include <cstdlib>
 #include <cstdint>
-#include <cwchar>
+#include <cctype>
 
 // Streams
 #include <sstream>
@@ -80,26 +80,26 @@ inline std::string format_duration(const std::chrono::duration<Rep, Period>& dur
     return oss.str();
 }
 
-inline boost::optional<std::wstring> extract_name(const std::wstring& line, std::wstring::size_type header_beg) {
+inline boost::optional<std::u16string> extract_name(const std::u16string& line, std::u16string::size_type header_beg) {
     // Format: [ YYYY.MM.DD HH:mm:ss ] CHARACTER_NAME > TEXT
     // Some lines may be damaged due to missing synchronization on CCP's part
     // See https://community.eveonline.com/support/policies/naming-policy-en/
-    constexpr std::wstring::size_type header_len = 22;
+    constexpr std::u16string::size_type header_len = 22;
 
-    if (header_beg + header_len >= line.size() || line.at(header_beg + header_len) != L']') {
+    if (header_beg + header_len >= line.size() || line.at(header_beg + header_len) != ']') {
         // Invalid match
         return boost::none;
     }
 
-    std::wstring::size_type name_beg = header_beg + header_len + 2;
-    std::wstring::size_type name_end = name_beg;
+    std::u16string::size_type name_beg = header_beg + header_len + 2;
+    std::u16string::size_type name_end = name_beg;
 
     unsigned char num_space = 0;
     const auto line_len = line.size();
     for (auto idx = name_beg; idx < line_len; ++idx) {
-        wchar_t cur = line[idx];
-        if (!iswalnum(cur) && cur != L'-' && cur != L'\'') {
-            if (cur == L' ' && num_space < 2 && idx + 1 < line_len && line.at(idx + 1) != L'>') {
+        char16_t cur = line[idx];
+        if (!isalnum(cur) && cur != '-' && cur != '\'') {
+            if (cur == ' ' && num_space < 2 && idx + 1 < line_len && line.at(idx + 1) != '>') {
                 ++num_space;
             } else {
                 name_end = idx;

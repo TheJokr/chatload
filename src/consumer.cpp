@@ -38,16 +38,16 @@
 #include "format.hpp"
 
 
-void chatload::consumer::consumeLogs(moodycamel::ReaderWriterQueue<std::wstring>& queue,
-                                     std::unordered_set<std::wstring>& out) {
+void chatload::consumer::consumeLogs(moodycamel::ReaderWriterQueue<std::u16string>& queue,
+                                     std::unordered_set<std::u16string>& out) {
     // Empty string signalizes end of files
-    std::wstring file;
+    std::u16string file;
     do {
         while (!queue.try_dequeue(file)) {}
 
-        std::wstring::size_type beg, last = 0;
-        while ((beg = file.find(L'[', last)) != std::wstring::npos) {
-            boost::optional<std::wstring> char_name = chatload::format::extract_name(file, beg);
+        std::u16string::size_type beg, last = 0;
+        while ((beg = file.find('[', last)) != std::u16string::npos) {
+            boost::optional<std::u16string> char_name = chatload::format::extract_name(file, beg);
             if (char_name) { out.insert(std::move(*char_name)); }
             last = beg + 1;
         }

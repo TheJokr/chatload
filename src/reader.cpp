@@ -49,7 +49,7 @@
 
 // x86 sports a little-endian memory architecture,
 // thus we are able to load the file's content into memory bytewise
-bool chatload::reader::readUTF16LE(const chatload::string& path, std::wstring& buffer) {
+bool chatload::reader::readUTF16LE(const chatload::string& path, std::u16string& buffer) {
     std::ifstream in(path, std::ifstream::binary | std::ifstream::ate);
     if (!in) { return false; }
 
@@ -61,14 +61,14 @@ bool chatload::reader::readUTF16LE(const chatload::string& path, std::wstring& b
     in.seekg(2, std::ifstream::beg);
     buffer.resize(size / 2);
 
-    // std::wstring is guaranteed to use contiguous memory
+    // std::basic_string is guaranteed to use contiguous memory
     in.read(reinterpret_cast<char*>(&buffer[0]), size);
     return true;
 }
 
 chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& args,
                                                        const std::basic_regex<chatload::char_t>& pattern,
-                                                       moodycamel::ReaderWriterQueue<std::wstring>& queue,
+                                                       moodycamel::ReaderWriterQueue<std::u16string>& queue,
                                                        std::function<void(const chatload::os::dir_entry&)> file_cb) {
     chatload::reader::read_stat res;
     const auto start_time = std::chrono::system_clock::now();
@@ -91,7 +91,7 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
         if (cache[file.name] >= file.write_time || !std::regex_match(file.name, pattern)) { continue; }
 
         // If readUTF16LE returns true, buf.empty() always returns false
-        std::wstring buf;
+        std::u16string buf;
         if (!chatload::reader::readUTF16LE(log_folder + file.name, buf)) { continue; }
         while (!queue.try_enqueue(std::move(buf))) {}
 
@@ -102,7 +102,7 @@ chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& a
         if (file_cb) { file_cb(file); }
     }
     // Empty string signalizes end of files
-    queue.enqueue(std::wstring());
+    queue.enqueue(std::u16string());
 
     chatload::file_cache::save_to_file(cache, args.cache_file);
     res.duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start_time);

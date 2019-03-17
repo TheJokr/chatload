@@ -79,8 +79,8 @@ int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
 
 
     // Read logs
-    std::unordered_set<std::wstring> names;
-    moodycamel::ReaderWriterQueue<std::wstring> queue;
+    std::unordered_set<std::u16string> names;
+    moodycamel::ReaderWriterQueue<std::u16string> queue;
 
     chatload::reader::read_stat res;
     using regex_t = std::basic_regex<chatload::char_t>;
@@ -105,7 +105,7 @@ int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
         CHATLOAD_COUT << "Failed to read logs, shutting down" << std::endl;
 
         // Terminate consumer gracefully
-        queue.enqueue(std::wstring());
+        file_queue.enqueue(std::u16string());
         consumer.join();
         return 1;
     }

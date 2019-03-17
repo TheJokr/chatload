@@ -33,7 +33,7 @@
 
 namespace chatload {
 namespace consumer {
-void consumeLogs(moodycamel::ReaderWriterQueue<std::wstring>& queue, std::unordered_set<std::wstring>& out);
+void consumeLogs(moodycamel::ReaderWriterQueue<std::u16string>& queue, std::unordered_set<std::u16string>& out);
 }  // namespace consumer
 }  // namespace chatload
 
