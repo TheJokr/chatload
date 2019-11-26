@@ -1,5 +1,5 @@
-[submodule "src/readerwriterqueue"]
-	path = src/readerwriterqueue
+[submodule "ext/readerwriterqueue"]
+	path = ext/readerwriterqueue
 	url = https://github.com/cameron314/readerwriterqueue.git
 [submodule "ext/lz4"]
 	path = ext/lz4

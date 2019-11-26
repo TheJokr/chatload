@@ -32,7 +32,7 @@
 #include <boost/optional.hpp>
 
 // lock-free queue
-#include "readerwriterqueue/readerwriterqueue.h"
+#include <readerwriterqueue.h>
 
 // chatload components
 #include "format.hpp"

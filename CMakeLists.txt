@@ -47,6 +47,7 @@ elseif (UNIX)
     target_compile_options(chatload PRIVATE "-Wall" "-Wextra" "-pedantic" "-Werror")
 endif()
 
+target_include_directories(chatload PRIVATE "ext/readerwriterqueue")
 target_link_libraries(chatload PRIVATE Boost::disable_autolinking Boost::boost
                                        Boost::system Boost::program_options)
 target_link_libraries(chatload PRIVATE OpenSSL::SSL OpenSSL::Crypto)

@@ -39,7 +39,7 @@
 #include <cpprest/json.h>
 
 // lock-free queue
-#include "readerwriterqueue/readerwriterqueue.h"
+#include <readerwriterqueue.h>
 
 // chatload components
 #include "common.hpp"

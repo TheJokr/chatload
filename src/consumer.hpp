@@ -29,7 +29,7 @@
 #include <unordered_set>
 
 // lock-free queue
-#include "readerwriterqueue/readerwriterqueue.h"
+#include <readerwriterqueue.h>
 
 namespace chatload {
 namespace consumer {
