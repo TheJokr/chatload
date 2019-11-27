@@ -18,7 +18,7 @@ set(Boost_USE_STATIC_LIBS ON)
 if (MSVC)
     set(Boost_USE_STATIC_RUNTIME ON)
 endif()
-find_package(Boost REQUIRED COMPONENTS system program_options)
+find_package(Boost 1.69 REQUIRED COMPONENTS program_options)
 
 # OpenSSL (for Boost.Asio)
 if (WIN32)
@@ -48,7 +48,6 @@ elseif (UNIX)
 endif()
 
 target_include_directories(chatload PRIVATE "ext/readerwriterqueue")
-target_link_libraries(chatload PRIVATE Boost::disable_autolinking Boost::boost
-                                       Boost::system Boost::program_options)
+target_link_libraries(chatload PRIVATE Boost::disable_autolinking Boost::boost Boost::program_options)
 target_link_libraries(chatload PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(chatload PRIVATE lz4)
