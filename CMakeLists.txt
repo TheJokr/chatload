@@ -32,6 +32,11 @@ add_library(lz4 STATIC EXCLUDE_FROM_ALL "ext/lz4/lib/lz4.c" "ext/lz4/lib/lz4hc.c
 target_compile_definitions(lz4 PRIVATE "XXH_NAMESPACE=LZ4_")
 target_include_directories(lz4 INTERFACE "ext/lz4/lib")
 
+# xxHash (inlined)
+add_library(xxhash INTERFACE)
+target_compile_definitions(xxhash INTERFACE "XXH_INLINE_ALL")
+target_include_directories(xxhash INTERFACE "ext/xxhash")
+
 add_executable(chatload "src/main.cpp" "src/cli.cpp" "src/reader.cpp" "src/os.cpp"
                    "src/filecache.cpp" "src/consumer.cpp" "src/network.cpp")
 if (WIN32)
@@ -51,3 +56,4 @@ target_include_directories(chatload PRIVATE "ext/readerwriterqueue")
 target_link_libraries(chatload PRIVATE Boost::disable_autolinking Boost::boost Boost::program_options)
 target_link_libraries(chatload PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(chatload PRIVATE lz4)
+target_link_libraries(chatload PRIVATE xxhash)
