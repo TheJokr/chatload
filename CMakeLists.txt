@@ -26,6 +26,10 @@ if (WIN32)
 endif()
 find_package(OpenSSL REQUIRED)
 
+# readerwriterqueue
+add_library(readerwriterqueue INTERFACE)
+target_include_directories(readerwriterqueue INTERFACE "ext/readerwriterqueue")
+
 # LZ4 (with framing)
 add_library(lz4 STATIC EXCLUDE_FROM_ALL "ext/lz4/lib/lz4.c" "ext/lz4/lib/lz4hc.c"
                 "ext/lz4/lib/lz4frame.c" "ext/lz4/lib/xxhash.c")
@@ -52,8 +56,8 @@ elseif (UNIX)
     target_compile_options(chatload PRIVATE "-Wall" "-Wextra" "-pedantic" "-Werror")
 endif()
 
-target_include_directories(chatload PRIVATE "ext/readerwriterqueue")
 target_link_libraries(chatload PRIVATE Boost::disable_autolinking Boost::boost Boost::program_options)
 target_link_libraries(chatload PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(chatload PRIVATE readerwriterqueue)
 target_link_libraries(chatload PRIVATE lz4)
 target_link_libraries(chatload PRIVATE xxhash)
