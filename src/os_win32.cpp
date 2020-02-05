@@ -40,8 +40,17 @@
 #include <objbase.h>
 #include <ShlObj.h>
 
+// OpenSSL
+#include <openssl/ssl.h>
+
 // chatload components
 #include "common.hpp"
+
+
+void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
+    if (!ctx) { return; }
+    // TODO: implement cert import for Windows
+}
 
 
 chatload::string chatload::os::getLogFolder() {

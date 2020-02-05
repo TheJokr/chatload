@@ -47,6 +47,7 @@ if (WIN32)
     target_sources(chatload PRIVATE "src/os_win32.cpp")
 elseif (APPLE)
     target_sources(chatload PRIVATE "src/os_darwin.cpp")
+    target_link_libraries(chatload PRIVATE "-framework CoreFoundation" "-framework Security")
 endif()
 
 target_compile_features(chatload PRIVATE cxx_std_14)

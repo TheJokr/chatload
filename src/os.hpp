@@ -31,12 +31,16 @@
 #include <memory>
 #include <iterator>
 
+// OpenSSL
+#include <openssl/ssl.h>
+
 // chatload components
 #include "common.hpp"
 #include "deref_proxy.hpp"
 
 namespace chatload {
 namespace os {
+void loadTrustedCerts(SSL_CTX* ctx) noexcept;
 chatload::string getLogFolder();
 
 struct dir_entry {

@@ -35,7 +35,9 @@
 #include <stdexcept>
 
 // Utility
+#include <memory>
 #include <utility>
+#include <type_traits>
 
 // Darwin API
 #include <limits.h>
@@ -44,8 +46,81 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#include <CoreFoundation/CoreFoundation.h>
+#include <Security/Security.h>
+
+// OpenSSL
+#include <openssl/ssl.h>
+
 // chatload components
 #include "common.hpp"
+
+
+namespace {
+template<typename T>
+using cf_unique_ref = std::unique_ptr<typename std::remove_pointer<T>::type, decltype(&CFRelease)>;
+
+void addAllCertsToStore(cf_unique_ref<CFArrayRef> certs_array, X509_STORE* store) noexcept {
+    if (!certs_array || !store) { return; }
+
+    CFArrayApplyFunction(certs_array.get(), {0, CFArrayGetCount(certs_array.get())}, [](CFTypeRef cert_ref, void* store) {
+        CFDataRef cert_export;
+        if (SecItemExport(cert_ref, kSecFormatOpenSSL, 0, nullptr, &cert_export) != errSecSuccess) {
+            // Silently skip current certificate
+            return;
+        }
+
+        const unsigned char* cert_raw = CFDataGetBytePtr(cert_export);
+        X509* cert = d2i_X509(nullptr, &cert_raw, CFDataGetLength(cert_export));
+        if (!cert) {
+            // Silently skip current certificate
+            CFRelease(cert_export);
+            return;
+        }
+
+        X509_STORE_add_cert(static_cast<X509_STORE*>(store), cert);
+        CFRelease(cert_export);
+        OPENSSL_free(cert);
+    }, store);
+}
+
+cf_unique_ref<CFArrayRef> getRootsFromSearchList() noexcept {
+    // SecItemCopyMatching uses keychain search list by default
+    static CFTypeRef keys[5] = { kSecClass, kSecMatchLimit, kSecMatchTrustedOnly, kSecMatchValidOnDate, kSecReturnRef };
+    static CFTypeRef values[5] = { kSecClassCertificate, kSecMatchLimitAll, kCFBooleanTrue, kCFNull, kCFBooleanTrue };
+    cf_unique_ref<CFDictionaryRef> query = { CFDictionaryCreate(nullptr, keys, values, 5, nullptr, nullptr), &CFRelease };
+
+    // SecItemCopyMatching returns CFArray because of kSecMatchLimitAll
+    CFArrayRef tmp;
+    if (!query || SecItemCopyMatching(query.get(), reinterpret_cast<CFTypeRef*>(&tmp)) != errSecSuccess) {
+        // Silently ignore errors while retrieving certificates
+        tmp = nullptr;
+    }
+
+    return { tmp, &CFRelease };
+}
+
+cf_unique_ref<CFArrayRef> getRootsFromSystem() noexcept {
+    CFArrayRef tmp;
+    if (SecTrustCopyAnchorCertificates(&tmp) != errSecSuccess) {
+        // Silently ignore errors while retrieving certificates
+        tmp = nullptr;
+    }
+
+    return { tmp, &CFRelease };
+}
+}  // Anonymous namespace
+
+
+void chatload::os::loadTrustedCerts(SSL_CTX *ctx) noexcept {
+    if (!ctx) { return; }
+
+    X509_STORE* verify_store = SSL_CTX_get_cert_store(ctx);
+    if (!verify_store) { return; }
+
+    addAllCertsToStore(getRootsFromSystem(), verify_store);
+    addAllCertsToStore(getRootsFromSearchList(), verify_store);
+}
 
 
 chatload::string chatload::os::getLogFolder() {
