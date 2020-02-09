@@ -18,13 +18,13 @@ set(Boost_USE_STATIC_LIBS ON)
 if (MSVC)
     set(Boost_USE_STATIC_RUNTIME ON)
 endif()
-find_package(Boost 1.69 REQUIRED COMPONENTS program_options)
+find_package(Boost 1.70 REQUIRED COMPONENTS program_options)
 
 # OpenSSL (for Boost.Asio)
 if (WIN32)
     set(OPENSSL_USE_STATIC_LIBS ON)
 endif()
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL 1.1.0 REQUIRED)
 
 # readerwriterqueue
 add_library(readerwriterqueue INTERFACE)

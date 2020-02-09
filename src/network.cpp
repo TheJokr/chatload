@@ -21,59 +21,86 @@
 // Forward declaration
 #include "network.hpp"
 
-// Streams
-#include <sstream>
+// Utility
+#include <functional>
 
-// Containers
-#include <string>
-#include <vector>
-#include <unordered_set>
+// Boost.System
+#include <boost/system/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
-// C++ REST SDK (PPLX, HTTP Client, JSON)
-#include <pplx/pplxtasks.h>
-#include <cpprest/http_client.h>
-#include <cpprest/json.h>
+// Boost.Asio
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/verify_mode.hpp>
+#include <boost/asio/ssl/rfc2818_verification.hpp>
+
+// chatload components
+#include "cli.hpp"
 
 
-namespace {
-std::wstring join_set(const std::unordered_set<std::wstring>& set, const std::wstring& sep) {
-    if (set.empty()) { return std::wstring(); }
-    std::wstringstream wss;
+using namespace std::placeholders;
 
-    auto iter = set.cbegin();
-    wss << *iter;
-    for (++iter; iter != set.cend(); ++iter) {
-        wss << sep << *iter;
-    }
+namespace asio {
+using namespace boost::asio;
+using tcp = ip::tcp;
+}  // namespace asio
 
-    return wss.str();
+
+chatload::network::tcp_writer::tcp_writer(const chatload::cli::host &host, asio::io_context& io_ctx,
+                                          asio::ssl::context& ssl_ctx, asio::tcp::resolver& tcp_resolver) :
+        io_ctx(io_ctx), ssl_sock(io_ctx, ssl_ctx) {
+    // TODO: allow optional per-host verify_mode config
+    ssl_sock.set_verify_mode(asio::ssl::verify_peer);
+    ssl_sock.set_verify_callback(asio::ssl::rfc2818_verification(host.name));
+
+    tcp_resolver.async_resolve(host.name, host.port, asio::tcp::resolver::address_configured,
+                               std::bind(&tcp_writer::resolve_hdlr, this, _1, _2));
 }
-}  // Anonymous namespace
+
+void chatload::network::tcp_writer::resolve_hdlr(const boost::system::error_code& ec,
+                                                 asio::tcp::resolver::results_type results) {
+    if (ec) { throw boost::system::system_error(ec, "async_resolve"); }
+    asio::async_connect(this->ssl_sock.next_layer(), results, std::bind(&tcp_writer::connect_hdlr, this, _1, _2));
+}
+
+void chatload::network::tcp_writer::connect_hdlr(const boost::system::error_code& ec, const asio::tcp::endpoint&) {
+    if (ec) { throw boost::system::system_error(ec, "async_connect"); }
+    this->ssl_sock.async_handshake(decltype(this->ssl_sock)::client,
+                                   std::bind(&tcp_writer::ssl_handshake_hdlr, this, _1));
+}
+
+void chatload::network::tcp_writer::ssl_handshake_hdlr(const boost::system::error_code& ec) {
+    if (ec) { throw boost::system::system_error(ec, "async_handshake"); }
+    this->write_queued = false;
+}
 
 
-std::vector<pplx::task<void>> chatload::network::sendNames(const web::json::array& endpoints,
-                                                           const std::unordered_set<std::wstring>& names) {
-    std::vector<pplx::task<void>> reqs;
-    reqs.reserve(endpoints.size());
-    std::wstring all_names = join_set(names, L",");
+void chatload::network::tcp_writer::write_hdlr(const boost::system::error_code& ec, std::size_t) {
+    this->write_queued = false;
+    if (ec) { throw boost::system::system_error(ec, "async_write"); }
 
-    for (const auto& endpt : endpoints) {
-        std::wstring host = endpt.at(L"host").as_string();
-        web::http::client::http_client client(host);
-
-        reqs.push_back(client.request(
-            web::http::methods::POST, endpt.at(L"resource").as_string(),
-            endpt.at(L"parameter").as_string() + L"=" + all_names,
-            L"application/x-www-form-urlencoded"
-        ).then([host](web::http::http_response resp) {
-            if (resp.status_code() == web::http::status_codes::OK) {
-                std::wcout << "Successfully added character names to the endpoint at " << host << std::endl;
-            } else {
-                std::wcerr << "Failed to add character names to the endpoint at " << host << ": "
-                           << "Server responded with status code " << resp.status_code() << std::endl;
-            }
-        }));
+    if (this->buffers.empty()) {
+        if (this->shutdown_queued) {
+            this->ssl_sock.async_shutdown(std::bind(&tcp_writer::ssl_shutdown_hdlr, this, _1));
+            this->write_queued = true;
+        }
+        return;
     }
 
-    return reqs;
+    asio::async_write(this->ssl_sock, this->buffers, std::bind(&tcp_writer::write_hdlr, this, _1, _2));
+    this->write_queued = true;
+    this->buffers.clear();
+}
+
+
+void chatload::network::tcp_writer::ssl_shutdown_hdlr(const boost::system::error_code& ec) {
+    if (ec) { throw boost::system::system_error(ec, "async_shutdown"); }
+
+    // Close after SSL shutdown
+    auto& tcp_sock = this->ssl_sock.next_layer();
+    tcp_sock.shutdown(asio::tcp::socket::shutdown_both);
+    tcp_sock.close();
 }

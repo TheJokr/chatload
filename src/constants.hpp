@@ -27,6 +27,9 @@
 // C headers
 #include <cstdint>
 
+// OpenSSL
+#include <openssl/tls1.h>
+
 // chatload components
 #include "common.hpp"
 
@@ -41,6 +44,7 @@ constexpr wchar_t DEFAULTCONFIG[] = LR"({"POST": [{"host": "https://api.dashsec.
                                     LR"("parameter": "name"}], "regex": ".*"})";
 constexpr char DEFAULTHOST[] = "api.dashsec.com";
 constexpr char DEFAULTPORT[] = "36643";
+constexpr int OPENSSL_MIN_PROTO_VERSION = TLS1_2_VERSION;
 }  // namespace constants
 }  // namespace chatload
 
