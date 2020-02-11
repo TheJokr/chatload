@@ -35,16 +35,22 @@
 
 namespace chatload {
 inline namespace constants {
+// Version information
 constexpr char VERSION[] = "2.0.0-dev";
-constexpr chatload::char_t CONFIGFILE[] = CHATLOAD_STRING("chatload.cfg");
+
+// Config/CLI defaults
+constexpr chatload::char_t CONFIG_FILE[] = CHATLOAD_STRING("chatload.cfg");
 constexpr char CONFIG_HELP[] = "chatload.cfg";
-constexpr chatload::char_t CACHEFILE[] = CHATLOAD_STRING("filecache.tsv");
-constexpr char CACHE_HELP[] = "filecache.tsv";
-constexpr wchar_t DEFAULTCONFIG[] = LR"({"POST": [{"host": "https://api.dashsec.com", "resource": "/charDump.php", )"
-                                    LR"("parameter": "name"}], "regex": ".*"})";
-constexpr char DEFAULTHOST[] = "api.dashsec.com";
-constexpr char DEFAULTPORT[] = "36643";
+constexpr chatload::char_t CACHE_FILE[] = CHATLOAD_STRING("filecache.tsv");
+
+// Network defaults
+constexpr char DEFAULT_HOST[] = "api.dashsec.com";
+constexpr char DEFAULT_PORT[] = "36643";
+
+// OpenSSL defaults
 constexpr int OPENSSL_MIN_PROTO_VERSION = TLS1_2_VERSION;
+constexpr char OPENSSL_DEFAULT_CIPHER_LIST[] = "HIGH:!eNULL:!aNULL:!kRSA:!SHA1:!MD5";
+// constexpr char OPENSSL_DEFAULT_CIPHERSUITES[] = "TLSv1.3 defaults are fine";
 }  // namespace constants
 }  // namespace chatload
 

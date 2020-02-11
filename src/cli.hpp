@@ -24,9 +24,6 @@
 #define CHATLOAD_CLI_H
 
 
-// C headers
-#include <cstdint>
-
 // Containers
 #include <string>
 #include <vector>
@@ -36,22 +33,48 @@
 
 // chatload components
 #include "common.hpp"
-#include "constants.hpp"
 
 namespace chatload {
 namespace cli {
 struct host {
+    // See options::insecure_tls. If false, use the global setting.
+    bool insecure_tls = false;
+
+    // Hostname or IP address
     std::string name;
-    // Boost.Asio expects port as a string
+
+    // Numerical port or service name (e.g., "http")
     std::string port;
 };
 
 struct options {
+    // Verbose mode: report individual files
     bool verbose = false;
+
+    // Use write time cache for files
     bool use_cache = true;
+
+    // Disable TLS certificate verification
+    // May be overwritten for individual hosts
+    bool insecure_tls = false;
+
+    // File/directory with OpenSSL's CAfile/CApath format
+    // To be passed to SSL_CTX_load_verify_locations
+    boost::optional<std::string> ca_file, ca_path;
+
+    // TLSv1.2/TLSv1.3 ciphers to use
+    boost::optional<std::string> cipher_list, ciphersuites;
+
+    // Regex to filter log filenames
     chatload::string regex;
-    chatload::string cache_file = chatload::CACHEFILE;
+
+    // Location of write time cache, defaults to chatload::CACHE_FILE in OS-native cache folder
+    boost::optional<chatload::string> cache_file;
+
+    // Location of log files, defaults to the equivalent of ~/Documents/EVE/logs/Chatlogs
     boost::optional<chatload::string> log_folder;
+
+    // chatload API servers to upload results to
     std::vector<host> hosts;
 };
 
