@@ -160,23 +160,23 @@ chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv
 
     bool ver = vm["version"].as<bool>(), help = vm["help"].as<bool>();
     if (ver) {
-        CHATLOAD_COUT << argv[0] << " version " << chatload::VERSION << "\n"
-                      << "Copyright (C) 2015-2019  Leo Bloecher\n"
-                      << "This program comes with ABSOLUTELY NO WARRANTY.\n"
-                      << "This is free software, and you are welcome to redistribute it under certain conditions."
-                      << std::endl;
+        chatload::cout << argv[0] << " version " << chatload::VERSION << "\n"
+                       << "Copyright (C) 2015-2019  Leo Bloecher\n"
+                       << "This program comes with ABSOLUTELY NO WARRANTY.\n"
+                       << "This is free software, and you are welcome to redistribute it under certain conditions."
+                       << std::endl;
     }
 
     if (help) {
-        if (ver) { CHATLOAD_COUT << "\n"; }
+        if (ver) { chatload::cout << "\n"; }
 
         std::stringstream ss;
         ss << visible_options;
         std::string desc(ss.str());
         desc.pop_back();
 
-        CHATLOAD_COUT << "Usage: " << argv[0] << " [OPTION]... [path to EVE logs]\n\n"
-                      << desc.c_str() << std::endl;
+        chatload::cout << "Usage: " << argv[0] << " [OPTION]... [path to EVE logs]\n\n"
+                       << desc.c_str() << std::endl;
     }
 
     if (ver || help) { std::exit(0); }

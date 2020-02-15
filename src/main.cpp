@@ -67,15 +67,15 @@ int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
         args = chatload::cli::parseArgs(argc, argv);
     } catch (std::logic_error& ex) {
         // boost::program_options error
-        CHATLOAD_CERR << "ERROR: " << ex.what() << std::endl;
-        CHATLOAD_COUT << "See -h/--help for allowed options" << std::endl;
+        chatload::cerr << "ERROR: " << ex.what() << std::endl;
+        chatload::cout << "See -h/--help for allowed options" << std::endl;
         return 1;
     }
 
     chatload::config cfg(L"config.json");  // TODO: remove
 
-    CHATLOAD_COUT << "This app scrapes your EVE Online chat logs for character names and adds them to a database\n"
-                  << std::endl;
+    chatload::cout << "This app scrapes your EVE Online chat logs for character names and adds them to a database\n"
+                   << std::endl;
 
 
     // Read logs
@@ -86,7 +86,7 @@ int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
     using regex_t = std::basic_regex<chatload::char_t>;
     const regex_t regex(args.regex, regex_t::optimize | regex_t::ECMAScript);
     const auto file_cb = [](const chatload::os::dir_entry& file) {
-        CHATLOAD_COUT << file.name << " (" << file.size << " byte" << (file.size != 1 ? "s)" : ")") << "\n";
+        chatload::cout << file.name << " (" << file.size << " byte" << (file.size != 1 ? "s)" : ")") << "\n";
     };
 
     // Extract character names asynchronously
@@ -94,15 +94,15 @@ int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
 
     try {
         if (args.verbose) {
-            CHATLOAD_COUT << "Files read:\n";
+            chatload::cout << "Files read:\n";
             res = chatload::reader::readLogs(args, regex, queue, file_cb);
         } else {
-            CHATLOAD_COUT << "Reading files...\n";
+            chatload::cout << "Reading files...\n";
             res = chatload::reader::readLogs(args, regex, queue);
         }
     } catch (chatload::runtime_error& ex) {
-        CHATLOAD_CERR << "ERROR: " << ex.what_cl() << std::endl;
-        CHATLOAD_COUT << "Failed to read logs, shutting down" << std::endl;
+        chatload::cerr << "ERROR: " << ex.what_cl() << std::endl;
+        chatload::cout << "Failed to read logs, shutting down" << std::endl;
 
         // Terminate consumer gracefully
         file_queue.enqueue(std::u16string());
@@ -113,7 +113,7 @@ int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
     auto fmt = chatload::format::format_size(res.bytes_read);
     std::string dur = chatload::format::format_duration(res.duration);
 
-    CHATLOAD_COUT << "Total of " << res.files_read << " files with a size of " << std::fixed << std::setprecision(2)
+    chatload::cout << "Total of " << res.files_read << " files with a size of " << std::fixed << std::setprecision(2)
                   << fmt.first << " " << fmt.second.c_str() << " read within " << dur.c_str() << std::endl;
 
     consumer.join();
@@ -121,26 +121,26 @@ int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
 
 
     // Upload character names
-    CHATLOAD_COUT << "\nEstablishing connection(s)...";
+    chatload::cout << "\nEstablishing connection(s)...";
 
     std::vector<pplx::task<void>> reqs;
     try {
         reqs = chatload::network::sendNames(cfg.get(L"POST").as_array(), names);
     } catch (std::exception& ex) {
-        CHATLOAD_COUT << "\n";
-        CHATLOAD_CERR << "ERROR: " << ex.what() << std::endl;
-        CHATLOAD_COUT << "Failed to read endpoints, shutting down" << std::endl;
+        chatload::cout << "\n";
+        chatload::cerr << "ERROR: " << ex.what() << std::endl;
+        chatload::cout << "Failed to read endpoints, shutting down" << std::endl;
         return 1;
     }
 
-    CHATLOAD_COUT << " " << reqs.size() << " connection(s) established\n"
-                  << "Adding character names to the endpoint(s)" << std::endl;
+    chatload::cout << " " << reqs.size() << " connection(s) established\n"
+                   << "Adding character names to the endpoint(s)" << std::endl;
 
     try {
         pplx::when_all(reqs.cbegin(), reqs.cend()).wait();
     } catch (web::http::http_exception& ex) {
-        CHATLOAD_CERR << "ERROR: " << ex.what() << std::endl;
-        CHATLOAD_COUT << "Failed to add character names to one of the endpoints" << std::endl;
+        chatload::cerr << "ERROR: " << ex.what() << std::endl;
+        chatload::cout << "Failed to add character names to one of the endpoints" << std::endl;
     }
 
     return 0;

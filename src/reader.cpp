@@ -86,7 +86,7 @@ chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::opti
         cache = chatload::file_cache::load_from_file(args.cache_file);
     }
 
-    log_folder += CHATLOAD_PATH_SEP;
+    log_folder += chatload::PATH_SEP;
     for (const chatload::os::dir_entry& file : log_dir) {
         if (cache[file.name] >= file.write_time || !std::regex_match(file.name, pattern)) { continue; }
 

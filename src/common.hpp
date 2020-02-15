@@ -34,17 +34,17 @@ namespace chatload {
 #ifdef _WIN32
 using char_t = wchar_t;
 #define CHATLOAD_STRING(str) L##str
-#define CHATLOAD_COUT ::std::wcout
-#define CHATLOAD_CIN ::std::wcin
-#define CHATLOAD_CERR ::std::wcerr
-#define CHATLOAD_PATH_SEP CHATLOAD_STRING('\\')
+static auto& cout = ::std::wcout;
+static auto& cin = ::std::wcin;
+static auto& cerr = ::std::wcerr;
+constexpr char_t PATH_SEP = CHATLOAD_STRING('\\');
 #else  // !_WIN32
 using char_t = char;
 #define CHATLOAD_STRING(str) str
-#define CHATLOAD_COUT ::std::cout
-#define CHATLOAD_CIN ::std::cin
-#define CHATLOAD_CERR ::std::cerr
-#define CHATLOAD_PATH_SEP CHATLOAD_STRING('/')
+static auto& cout = ::std::cout;
+static auto& cin = ::std::cin;
+static auto& cerr = ::std::cerr;
+constexpr char_t PATH_SEP = CHATLOAD_STRING('/');
 #endif  // _WIN32
 
 using string = std::basic_string<char_t>;
