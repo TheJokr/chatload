@@ -53,7 +53,7 @@ struct read_stat {
     std::chrono::seconds duration;
 };
 
-read_stat readLogs(chatload::cli::options& args, const std::basic_regex<chatload::char_t>& pattern,
+read_stat readLogs(const chatload::cli::options& args, const std::basic_regex<chatload::char_t>& pattern,
                    moodycamel::ReaderWriterQueue<std::u16string>& queue,
                    std::function<void(const chatload::os::dir_entry&)> file_cb = {});
 }  // namespace reader

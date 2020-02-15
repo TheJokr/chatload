@@ -38,6 +38,7 @@
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/verify_mode.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
 // OpenSSL
@@ -96,15 +97,22 @@ struct clients_context {
     boost::asio::ip::tcp::resolver tcp_resolver{io_ctx};
     std::vector<tcp_writer> writers;
 
-    inline explicit clients_context(const std::vector<chatload::cli::host>& hosts) {
-        // TODO: allow optional CAfile/CApath config in addition to OS-native cert store
-        // TODO: allow optional cipher_list (TLSv1.2)/ciphersuites (TLSv1.3) config
+    inline explicit clients_context(const chatload::cli::options& args) {
+        this->ssl_ctx.set_verify_mode(args.insecure_tls ? boost::asio::ssl::verify_none : boost::asio::ssl::verify_peer);
         SSL_CTX* ssl_ctx_native = this->ssl_ctx.native_handle();
+
         SSL_CTX_set_min_proto_version(ssl_ctx_native, chatload::OPENSSL_MIN_PROTO_VERSION);
+        if (args.cipher_list) { SSL_CTX_set_cipher_list(ssl_ctx_native, args.cipher_list.get().c_str()); }
+        if (args.ciphersuites) { SSL_CTX_set_ciphersuites(ssl_ctx_native, args.ciphersuites.get().c_str()); }
+        if (args.ca_file || args.ca_path) {
+            const char* CAfile = args.ca_file ? args.ca_file.get().c_str() : nullptr;
+            const char* CApath = args.ca_path ? args.ca_path.get().c_str() : nullptr;
+            SSL_CTX_load_verify_locations(ssl_ctx_native, CAfile, CApath);
+        }
         chatload::os::loadTrustedCerts(ssl_ctx_native);
 
-        this->writers.reserve(hosts.size());
-        for (auto& host : hosts) {
+        this->writers.reserve(args.hosts.size());
+        for (auto& host : args.hosts) {
             this->writers.emplace_back(host, this->io_ctx, this->ssl_ctx, this->tcp_resolver);
         }
     }

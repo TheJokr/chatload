@@ -52,9 +52,8 @@ using tcp = ip::tcp;
 chatload::network::tcp_writer::tcp_writer(const chatload::cli::host &host, asio::io_context& io_ctx,
                                           asio::ssl::context& ssl_ctx, asio::tcp::resolver& tcp_resolver) :
         io_ctx(io_ctx), ssl_sock(io_ctx, ssl_ctx) {
-    // TODO: allow optional per-host verify_mode config
-    ssl_sock.set_verify_mode(asio::ssl::verify_peer);
-    ssl_sock.set_verify_callback(asio::ssl::rfc2818_verification(host.name));
+    if (host.insecure_tls) { this->ssl_sock.set_verify_mode(asio::ssl::verify_none); }
+    this->ssl_sock.set_verify_callback(asio::ssl::rfc2818_verification(host.name));
 
     tcp_resolver.async_resolve(host.name, host.port, asio::tcp::resolver::address_configured,
                                std::bind(&tcp_writer::resolve_hdlr, this, _1, _2));

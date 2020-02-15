@@ -66,7 +66,7 @@ bool chatload::reader::readUTF16LE(const chatload::string& path, std::u16string&
     return true;
 }
 
-chatload::reader::read_stat chatload::reader::readLogs(chatload::cli::options& args,
+chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::options& args,
                                                        const std::basic_regex<chatload::char_t>& pattern,
                                                        moodycamel::ReaderWriterQueue<std::u16string>& queue,
                                                        std::function<void(const chatload::os::dir_entry&)> file_cb) {
