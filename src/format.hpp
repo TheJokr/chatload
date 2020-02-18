@@ -67,8 +67,8 @@ inline std::string format_duration(const std::chrono::duration<Rep, Period>& dur
     bool neg = secs < 0;
     if (neg) { secs = -secs; }
 
-    auto hours = secs / 3600;
-    secs %= 3600;
+    auto hours = secs / (60 * 60);
+    secs %= (60 * 60);
     auto mins = secs / 60;
     secs %= 60;
 

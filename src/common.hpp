@@ -34,16 +34,16 @@ namespace chatload {
 #ifdef _WIN32
 using char_t = wchar_t;
 #define CHATLOAD_STRING(str) L##str
-static auto& cout = ::std::wcout;
-static auto& cin = ::std::wcin;
-static auto& cerr = ::std::wcerr;
+static auto& cout = ::std::wcout;  // NOLINT(clang-diagnostic-unused-variable)
+static auto& cin = ::std::wcin;  // NOLINT(clang-diagnostic-unused-variable)
+static auto& cerr = ::std::wcerr;  // NOLINT(clang-diagnostic-unused-variable)
 constexpr char_t PATH_SEP = CHATLOAD_STRING('\\');
 #else  // !_WIN32
 using char_t = char;
 #define CHATLOAD_STRING(str) str
-static auto& cout = ::std::cout;
-static auto& cin = ::std::cin;
-static auto& cerr = ::std::cerr;
+static auto& cout = ::std::cout;  // NOLINT(clang-diagnostic-unused-variable)
+static auto& cin = ::std::cin;  // NOLINT(clang-diagnostic-unused-variable)
+static auto& cerr = ::std::cerr;  // NOLINT(clang-diagnostic-unused-variable)
 constexpr char_t PATH_SEP = CHATLOAD_STRING('/');
 #endif  // _WIN32
 

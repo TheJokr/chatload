@@ -78,6 +78,7 @@ struct options {
     std::vector<host> hosts;
 };
 
+// NOLINTNEXTLINE(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 options parseArgs(int argc, chatload::char_t* argv[]);
 }  // namespace cli
 }  // namespace chatload

@@ -30,6 +30,7 @@
 
 // Containers
 #include <string>
+#include <array>
 
 // Exceptions
 #include <stdexcept>
@@ -40,7 +41,7 @@
 #include <type_traits>
 
 // Darwin API
-#include <limits.h>
+#include <limits.h>  // NOLINT(modernize-deprecated-headers): stick to OSX docs
 #include <sysdir.h>
 #include <wordexp.h>
 #include <dirent.h>
@@ -86,12 +87,18 @@ void addAllCertsToStore(cf_unique_ref<CFArrayRef> certs_array, X509_STORE* store
 
 cf_unique_ref<CFArrayRef> getRootsFromSearchList() noexcept {
     // SecItemCopyMatching uses keychain search list by default
-    static CFTypeRef keys[5] = { kSecClass, kSecMatchLimit, kSecMatchTrustedOnly, kSecMatchValidOnDate, kSecReturnRef };
-    static CFTypeRef values[5] = { kSecClassCertificate, kSecMatchLimitAll, kCFBooleanTrue, kCFNull, kCFBooleanTrue };
-    cf_unique_ref<CFDictionaryRef> query = { CFDictionaryCreate(nullptr, keys, values, 5, nullptr, nullptr), &CFRelease };
+    constexpr std::size_t query_entries = 5;
+    static std::array<CFTypeRef, query_entries> keys = { kSecClass, kSecMatchLimit, kSecMatchTrustedOnly,
+                                                         kSecMatchValidOnDate, kSecReturnRef };
+    static std::array<CFTypeRef, query_entries> values = { kSecClassCertificate, kSecMatchLimitAll, kCFBooleanTrue,
+                                                           kCFNull, kCFBooleanTrue };
+    cf_unique_ref<CFDictionaryRef> query = {
+            CFDictionaryCreate(nullptr, keys.data(), values.data(), query_entries, nullptr, nullptr), &CFRelease
+    };
 
     // SecItemCopyMatching returns CFArray because of kSecMatchLimitAll
     CFArrayRef tmp;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     if (!query || SecItemCopyMatching(query.get(), reinterpret_cast<CFTypeRef*>(&tmp)) != errSecSuccess) {
         // Silently ignore errors while retrieving certificates
         tmp = nullptr;
@@ -112,7 +119,7 @@ cf_unique_ref<CFArrayRef> getRootsFromSystem() noexcept {
 }  // Anonymous namespace
 
 
-void chatload::os::loadTrustedCerts(SSL_CTX *ctx) noexcept {
+void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
     if (!ctx) { return; }
 
     X509_STORE* verify_store = SSL_CTX_get_cert_store(ctx);
@@ -125,12 +132,12 @@ void chatload::os::loadTrustedCerts(SSL_CTX *ctx) noexcept {
 
 chatload::string chatload::os::getLogFolder() {
     std::string path;
-    char darres[PATH_MAX];
+    std::array<char, PATH_MAX> darres = {};
     wordexp_t we;
 
     auto state = sysdir_start_search_path_enumeration(SYSDIR_DIRECTORY_DOCUMENT, SYSDIR_DOMAIN_MASK_USER);
-    while ((state = sysdir_get_next_search_path_enumeration(state, darres)) != 0) {
-        if (wordexp(darres, &we, WRDE_NOCMD) == 0) {
+    while ((state = sysdir_get_next_search_path_enumeration(state, darres.data())) != 0) {
+        if (wordexp(darres.data(), &we, WRDE_NOCMD) == 0) {
             if (we.we_wordc > 0) {
                 path = we.we_wordv[0];
                 wordfree(&we);
@@ -148,7 +155,7 @@ chatload::string chatload::os::getLogFolder() {
 
 namespace {
 struct dtype_validator {
-    bool enable_dirs : 1, enable_hidden : 1, enable_system: 1;
+    bool enable_dirs : 1, enable_hidden : 1, enable_system : 1;
 
     bool operator()(const struct dirent* d_entry) {
         if (!d_entry) { return false; }
@@ -186,7 +193,7 @@ struct chatload::os::dir_handle::iter_state {
 };
 
 
-chatload::os::dir_handle::dir_handle() noexcept : status(CLOSED) {}
+chatload::os::dir_handle::dir_handle() noexcept = default;
 
 chatload::os::dir_handle::dir_handle(const chatload::string& dir, bool enable_dirs,
                                      bool enable_hidden, bool enable_system) :

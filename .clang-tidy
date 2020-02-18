@@ -1,0 +1,40 @@
+---
+FormatStyle: file
+HeaderFilterRegex: 'src/.+\.hpp$'
+Checks: 'boost-*,bugprone-*,cert-*,clang-*,cppcoreguidelines-*,google-*,misc-*,
+         modernize-*,performance-*,readability-*,fuchsia-trailing-return,hicpp-exception-baseclass,
+         hicpp-multiway-paths-covered,hicpp-signed-bitwise,llvm-namespace-comment,
+         -cert-dcl16-c,-cert-err60-cpp,-cert-dcl21-cpp,-cppcoreguidelines-owning-memory,
+         -cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-bounds-pointer-arithmetic,
+         -google-objc-*,-google-readability-todo,-google-runtime-int,-google-runtime-references,-misc-no-recursion,
+         -modernize-avoid-bind,-modernize-use-trailing-return-type,-readability-uppercase-literal-suffix,
+         -readability-isolate-declaration,-readability-named-parameter,-readability-else-after-return'
+WarningsAsErrors: '*,-clang-analyzer-cplusplus.Move'
+CheckOptions:
+- key: "llvm-namespace-comment.SpacesBeforeComments"
+  value: '2'
+- key: "readability-implicit-bool-conversion.AllowIntegerConditions"
+  value: '1'
+- key: "readability-implicit-bool-conversion.AllowPointerConditions"
+  value: '1'
+- key: "misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic"
+  value: '1'
+- key: "cppcoreguidelines-macro-usage.AllowedRegexp"
+  value: '^DEBUG_*|^CHATLOAD_STRING$'
+- key: "readability-magic-numbers.IgnoredIntegerValues"
+  value: '1;2;3;4;60;1000;'
+- key: "cppcoreguidelines-avoid-magic-numbers.IgnoredIntegerValues"
+  value: '1;2;3;4;60;1000;'
+- key: "performance-move-const-arg.CheckTriviallyCopyableMove"
+  value: '0'
+- key: "bugprone-suspicious-enum-usage.StrictMode"
+  value: '1'
+- key: "cppcoreguidelines-pro-type-member-init.UseAssignment"
+  value: '1'
+- key: "modernize-use-default-member-init.UseAssignment"
+  value: '1'
+- key: "google-readability-braces-around-statements.ShortStatementLines"
+  value: '0'
+- key: "readability-inconsistent-declaration-parameter-name.Strict"
+  value: '1'
+...

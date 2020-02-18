@@ -40,10 +40,10 @@
 #include "cli.hpp"
 
 
-using namespace std::placeholders;
+using namespace std::placeholders;  // NOLINT(google-build-using-namespace)
 
 namespace asio {
-using namespace boost::asio;
+using namespace boost::asio;  // NOLINT(google-build-using-namespace): effectively a namespace alias
 using tcp = ip::tcp;
 }  // namespace asio
 
@@ -66,6 +66,7 @@ chatload::network::tcp_writer::tcp_writer(const chatload::cli::host& host, asio:
 }
 
 void chatload::network::tcp_writer::resolve_hdlr(const boost::system::error_code& ec,
+                                                 // NOLINTNEXTLINE(performance-unnecessary-value-param)
                                                  asio::tcp::resolver::results_type results) {
     if (ec) { this->net_err.emplace(ec, "async_resolve"); return; }
     asio::async_connect(this->ssl_sock.next_layer(), results, std::bind(&tcp_writer::connect_hdlr, this, _1, _2));

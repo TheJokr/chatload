@@ -29,6 +29,7 @@ chatload::os::dir_handle::iterator chatload::os::dir_handle::begin() noexcept {
     return chatload::os::dir_handle::iterator(this);
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static): iterator factories are generally not static
 chatload::os::dir_handle::iterator chatload::os::dir_handle::end() noexcept {
     return chatload::os::dir_handle::iterator();
 }
@@ -61,6 +62,7 @@ chatload::os::dir_iter::pointer chatload::os::dir_iter::operator->() noexcept {
 
 bool chatload::os::dir_iter::handle_exhausted() const noexcept {
     // dir_handle is considered exhausted for end sentinel (hdl_ref == nullptr)
+    // NOLINTNEXTLINE(readability-implicit-bool-conversion): false positive (pointer conversion is allowed)
     return !this->hdl_ref || (this->hdl_ref->status == chatload::os::dir_handle::EXHAUSTED);
 }
 

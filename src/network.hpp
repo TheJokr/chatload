@@ -103,9 +103,9 @@ private:
 };
 
 struct clients_context {
-    boost::asio::io_context io_ctx{1};
-    boost::asio::ssl::context ssl_ctx{boost::asio::ssl::context::method::tls_client};
-    boost::asio::ip::tcp::resolver tcp_resolver{io_ctx};
+    boost::asio::io_context io_ctx{ 1 };
+    boost::asio::ssl::context ssl_ctx{ boost::asio::ssl::context::method::tls_client };
+    boost::asio::ip::tcp::resolver tcp_resolver{ io_ctx };
     std::vector<tcp_writer> writers;
 
     inline explicit clients_context(const chatload::cli::options& args) {

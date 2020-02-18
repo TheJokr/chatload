@@ -55,9 +55,9 @@
 
 // main function name
 #ifdef _WIN32
-#define CHATLOAD_MAIN_FUNC_NAME wmain
+#define CHATLOAD_MAIN_FUNC_NAME wmain  // NOLINT(cppcoreguidelines-macro-usage)
 #else  // !_WIN32
-#define CHATLOAD_MAIN_FUNC_NAME main
+#define CHATLOAD_MAIN_FUNC_NAME main  // NOLINT(cppcoreguidelines-macro-usage)
 #endif  // _WIN32
 
 
@@ -114,7 +114,7 @@ int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
     std::string dur = chatload::format::format_duration(res.duration);
 
     chatload::cout << "Total of " << res.files_read << " files with a size of " << std::fixed << std::setprecision(2)
-                  << fmt.first << " " << fmt.second.c_str() << " read within " << dur.c_str() << std::endl;
+                   << fmt.first << " " << fmt.second.c_str() << " read within " << dur.c_str() << std::endl;
 
     consumer.join();
     if (names.empty()) { return 0; }

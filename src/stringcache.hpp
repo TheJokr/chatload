@@ -47,7 +47,8 @@ template<std::size_t index_bits, typename T = std::uint_least32_t>
 class string_cache {
 private:
     static_assert(std::is_unsigned<T>::value, "Value (T) must be an unsigned arithmetic type");
-    static_assert((index_bits + sizeof(T) * CHAR_BIT) <= 64, "Index and value (T) may not exceed 64 bits");
+    static_assert((index_bits + sizeof(T) * CHAR_BIT) <= (sizeof(XXH64_hash_t) * CHAR_BIT),
+                  "Index and value (T) may not exceed the size of XXH64_hash_t");
     std::vector<T> cache;
 
 public:

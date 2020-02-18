@@ -36,21 +36,21 @@
 namespace chatload {
 inline namespace constants {
 // Version information
-constexpr char VERSION[] = "2.0.0-dev";
+constexpr char VERSION[] = "2.0.0-dev";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 
 // Config/CLI defaults
-constexpr chatload::char_t CONFIG_FILE[] = CHATLOAD_STRING("chatload.cfg");
-constexpr char CONFIG_HELP[] = "chatload.cfg";
-constexpr chatload::char_t CACHE_FILE[] = CHATLOAD_STRING("filecache.tsv");
+constexpr chatload::char_t CONFIG_FILE[] = CHATLOAD_STRING("chatload.cfg");  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
+constexpr char CONFIG_HELP[] = "chatload.cfg";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
+constexpr chatload::char_t CACHE_FILE[] = CHATLOAD_STRING("filecache.tsv");  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 
 // Network defaults
-constexpr char DEFAULT_HOST[] = "api.dashsec.com";
-constexpr char DEFAULT_PORT[] = "36643";
+constexpr char DEFAULT_HOST[] = "api.dashsec.com";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
+constexpr char DEFAULT_PORT[] = "36643";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 
 // OpenSSL defaults
 constexpr int OPENSSL_MIN_PROTO_VERSION = TLS1_2_VERSION;
-constexpr char OPENSSL_DEFAULT_CIPHER_LIST[] = "HIGH:!eNULL:!aNULL:!kRSA:!SHA1:!MD5";
-// constexpr char OPENSSL_DEFAULT_CIPHERSUITES[] = "TLSv1.3 defaults are fine";
+constexpr char OPENSSL_DEFAULT_CIPHER_LIST[] = "HIGH:!eNULL:!aNULL:!kRSA:!SHA1:!MD5";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
+// constexpr char OPENSSL_DEFAULT_CIPHERSUITES[] = "TLSv1.3 defaults are fine";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 }  // namespace constants
 }  // namespace chatload
 

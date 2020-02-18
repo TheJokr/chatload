@@ -60,18 +60,19 @@ inline void parseConfig(const chatload::string& file, const po::options_descript
     po::store(po::parse_config_file(in, cfg_options), vm);
 }
 
-std::vector<chatload::cli::host> parseHosts(po::variables_map& vm) {
+std::vector<chatload::cli::host> parseHosts(const po::variables_map& vm) {
     std::vector<chatload::cli::host> hosts;
 
-    if (vm.count("network.host")) {
-        const auto& host_lits = vm["network.host"].as<std::vector<std::string>>();
+    const auto hosts_iter = vm.find("network.host");
+    if (hosts_iter != vm.end()) {
+        const auto& host_lits = hosts_iter->second.as<std::vector<std::string>>();
         for (const auto& host_lit : host_lits) {
             // Not UB! (see std::basic_string::operator[])
             const bool insecure = host_lit[0] == '?';
 
             // Strip insecure marker (if present)
             boost::string_view host(host_lit);
-            host.remove_prefix(insecure);
+            host.remove_prefix(static_cast<boost::string_view::size_type>(insecure));
             if (host.empty()) { continue; }
 
             boost::string_view hostname;
@@ -113,6 +114,7 @@ std::vector<chatload::cli::host> parseHosts(po::variables_map& vm) {
 }  // Anonymous namespace
 
 
+// NOLINTNEXTLINE(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv[]) {
     // Options available both on the CLI and in the config
     boost::optional<std::string> ca_file, ca_path, cipher_list, ciphersuites;

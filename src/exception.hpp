@@ -40,8 +40,7 @@ private:
     chatload::string msg;
 
 public:
-    explicit runtime_error(const chatload::string& what) : msg(what) {}
-    explicit runtime_error(chatload::string&& what) noexcept : msg(std::move(what)) {}
+    explicit runtime_error(chatload::string what) : msg(std::move(what)) {}
     const char* what() const noexcept final { return "See what_cl"; }
     virtual chatload::string what_cl() const { return this->msg; }
 };

@@ -62,6 +62,7 @@ bool chatload::reader::readUTF16LE(const chatload::string& path, std::u16string&
     buffer.resize(size / 2);
 
     // std::basic_string is guaranteed to use contiguous memory
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): cast to bytes
     in.read(reinterpret_cast<char*>(&buffer[0]), size);
     return true;
 }
@@ -69,6 +70,7 @@ bool chatload::reader::readUTF16LE(const chatload::string& path, std::u16string&
 chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::options& args,
                                                        const std::basic_regex<chatload::char_t>& pattern,
                                                        moodycamel::ReaderWriterQueue<std::u16string>& queue,
+                                                       // NOLINTNEXTLINE(performance-unnecessary-value-param)
                                                        std::function<void(const chatload::os::dir_entry&)> file_cb) {
     chatload::reader::read_stat res;
     const auto start_time = std::chrono::system_clock::now();
@@ -93,7 +95,7 @@ chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::opti
         // If readUTF16LE returns true, buf.empty() always returns false
         std::u16string buf;
         if (!chatload::reader::readUTF16LE(log_folder + file.name, buf)) { continue; }
-        while (!queue.try_enqueue(std::move(buf))) {}
+        while (!queue.try_enqueue(std::move(buf))) {}  // NOLINT(bugprone-use-after-move): not *actually* moved
 
         cache[file.name] = file.write_time;
 

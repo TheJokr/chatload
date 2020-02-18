@@ -45,8 +45,8 @@ chatload::string getLogFolder();
 
 struct dir_entry {
     chatload::string name;
-    std::uint_least64_t size;
-    std::uint_least64_t write_time;
+    std::uint_least64_t size = 0;
+    std::uint_least64_t write_time = 0;
 };
 
 class dir_iter;

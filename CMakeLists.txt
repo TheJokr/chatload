@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.8)
 project(chatload-client VERSION 2.0.0 LANGUAGES C CXX)
 # Disable C++ vendor extensions by default
 set(CMAKE_CXX_EXTENSIONS OFF)
+# Enable compile command database for clang-tidy
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Use static runtime with MSVC by default
 if (MSVC)
     foreach(lang C CXX)

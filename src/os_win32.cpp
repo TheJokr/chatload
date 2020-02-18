@@ -20,8 +20,8 @@
 
 // WinAPI configuration
 #define WIN32_LEAN_AND_MEAN
-#define NTDDI_VERSION NTDDI_WIN7
-#define _WIN32_WINNT _WIN32_WINNT_WIN7
+#define NTDDI_VERSION NTDDI_WIN7  // NOLINT(cppcoreguidelines-macro-usage)
+#define _WIN32_WINNT _WIN32_WINNT_WIN7  // NOLINT(cppcoreguidelines-macro-usage)
 
 // Forward declaration
 #include "os.hpp"
@@ -83,7 +83,7 @@ struct chatload::os::dir_handle::iter_state {
 };
 
 
-chatload::os::dir_handle::dir_handle() noexcept : status(CLOSED) {}
+chatload::os::dir_handle::dir_handle() noexcept = default;
 
 chatload::os::dir_handle::dir_handle(const chatload::string& dir, bool enable_dirs,
                                      bool enable_hidden, bool enable_system) :

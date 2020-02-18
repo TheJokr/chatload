@@ -24,6 +24,9 @@
 #define CHATLOAD_DEREF_PROXY_H
 
 
+// Utility
+#include <utility>
+
 namespace chatload {
 template<typename T>
 class deref_proxy {
@@ -31,7 +34,7 @@ private:
     T value;
 
 public:
-    explicit deref_proxy(T value) : value(value) {}
+    explicit deref_proxy(T value) : value(std::move(value)) {}
     T operator*() const { return this->value; }
 };
 }  // namespace chatload
