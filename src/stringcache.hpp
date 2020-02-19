@@ -29,7 +29,6 @@
 #include <climits>
 
 // Containers
-#include <string>
 #include <vector>
 
 // Utility
@@ -37,9 +36,6 @@
 
 // xxHash3
 #include <xxh3.h>
-
-// chatload components
-#include "common.hpp"
 
 namespace chatload {
 // Inspired by https://cs.stackexchange.com/a/24122
@@ -56,13 +52,14 @@ public:
     string_cache() : cache(1ull << index_bits) {};
 
     // Returns whether the key was added or not, i.e., whether the key is new or not
-    inline bool add_if_absent(const std::u16string& key) noexcept {
+    template<typename Sequence>
+    inline bool add_if_absent(const Sequence& key) noexcept {
         constexpr std::size_t full_mask = (1ull << (index_bits + sizeof(T) * CHAR_BIT)) - 1;
         constexpr std::size_t idx_mask = (1ull << index_bits) - 1;
         constexpr std::size_t value_mask = full_mask ^ idx_mask;
 
         // xxHash takes size in bytes
-        XXH64_hash_t hash = XXH3_64bits(key.data(), sizeof(std::u16string::value_type) * key.size());
+        XXH64_hash_t hash = XXH3_64bits(key.data(), sizeof(typename Sequence::value_type) * key.size());
         std::size_t idx = hash & idx_mask;
         T val = (hash & value_mask) >> index_bits;
 
