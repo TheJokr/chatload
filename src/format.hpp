@@ -41,6 +41,7 @@
 
 // Boost
 #include <boost/optional.hpp>
+#include <boost/utility/string_view.hpp>
 
 namespace chatload {
 namespace format {
@@ -80,35 +81,34 @@ inline std::string format_duration(const std::chrono::duration<Rep, Period>& dur
     return oss.str();
 }
 
-inline boost::optional<std::u16string> extract_name(const std::u16string& line, std::u16string::size_type header_beg) {
-    // Format: [ YYYY.MM.DD HH:mm:ss ] CHARACTER_NAME > TEXT
+inline boost::optional<boost::u16string_view> extract_name(boost::u16string_view line) {
+    // Format: [ YYYY.MM.DD HH:mm:ss ] CHARACTER NAME > TEXT
     // Some lines may be damaged due to missing synchronization on CCP's part
     // See https://community.eveonline.com/support/policies/naming-policy-en/
-    constexpr std::u16string::size_type header_len = 22;
+    constexpr boost::u16string_view::size_type header_len = 24;
 
-    if (header_beg + header_len >= line.size() || line.at(header_beg + header_len) != ']') {
+    if (line.size() <= header_len || line[header_len - 2] != ']') {
         // Invalid match
         return boost::none;
     }
 
-    std::u16string::size_type name_beg = header_beg + header_len + 2;
-    std::u16string::size_type name_end = name_beg;
+    line.remove_prefix(header_len);
+    boost::u16string_view::size_type name_len = 0;
 
     unsigned char num_space = 0;
     const auto line_len = line.size();
-    for (auto idx = name_beg; idx < line_len; ++idx) {
-        char16_t cur = line[idx];
+    for (; name_len < line_len; ++name_len) {
+        char16_t cur = line[name_len];
         if (!isalnum(cur) && cur != '-' && cur != '\'') {
-            if (cur == ' ' && num_space < 2 && idx + 1 < line_len && line.at(idx + 1) != '>') {
+            if (cur == ' ' && num_space < 2 && name_len + 1 < line_len && line[name_len + 1] != '>') {
                 ++num_space;
             } else {
-                name_end = idx;
                 break;
             }
         }
     }
 
-    return line.substr(name_beg, name_end - name_beg);
+    return line.substr(0, name_len);
 }
 }  // namespace format
 }  // namespace chatload
