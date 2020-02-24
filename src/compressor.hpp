@@ -98,6 +98,8 @@ public:
         this->prefs = std::make_unique<LZ4F_preferences_t>(prefs);
     }
 
+    bool is_compressing() const noexcept { return static_cast<bool>(this->ctx); }
+
     optional_asio_buffer push_chunk(buffer_t&& chunk) {
         if (!this->ctx) {
             this->buf_store.push_back(std::move(chunk));
@@ -141,4 +143,4 @@ public:
 }  // namespace chatload
 
 
-#endif // CHATLOAD_LZ4_COMPRESSOR_H
+#endif  // CHATLOAD_LZ4_COMPRESSOR_H
