@@ -113,28 +113,28 @@ struct clients_context {
         SSL_CTX* ssl_ctx_native = this->ssl_ctx.native_handle();
 
         if (SSL_CTX_set_min_proto_version(ssl_ctx_native, chatload::OPENSSL_MIN_PROTO_VERSION) != 1) {
-            throw boost::system::system_error(clients_context::get_openssl_error(), "set_min_proto_version");
+            throw boost::system::system_error(get_openssl_error(), "set_min_proto_version");
         }
 
         if (args.cipher_list && SSL_CTX_set_cipher_list(ssl_ctx_native, args.cipher_list.get().c_str()) != 1) {
-            throw boost::system::system_error(clients_context::get_openssl_error(), "set_cipher_list");
+            throw boost::system::system_error(get_openssl_error(), "set_cipher_list");
         }
 
         if (args.ciphersuites && SSL_CTX_set_ciphersuites(ssl_ctx_native, args.ciphersuites.get().c_str()) != 1) {
-            throw boost::system::system_error(clients_context::get_openssl_error(), "set_ciphersuites");
+            throw boost::system::system_error(get_openssl_error(), "set_ciphersuites");
         }
 
         if (args.ca_file || args.ca_path) {
             const char* CAfile = args.ca_file ? args.ca_file.get().c_str() : nullptr;
             const char* CApath = args.ca_path ? args.ca_path.get().c_str() : nullptr;
             if (SSL_CTX_load_verify_locations(ssl_ctx_native, CAfile, CApath) != 1) {
-                throw boost::system::system_error(clients_context::get_openssl_error(), "load_verify_locations");
+                throw boost::system::system_error(get_openssl_error(), "load_verify_locations");
             }
         }
         chatload::os::loadTrustedCerts(ssl_ctx_native);
 
         this->writers.reserve(args.hosts.size());
-        for (auto& host : args.hosts) {
+        for (const auto& host : args.hosts) {
             this->writers.emplace_back(host, this->io_ctx, this->ssl_ctx, this->tcp_resolver);
         }
     }
@@ -145,7 +145,7 @@ struct clients_context {
     }
 
 private:
-    static inline boost::system::error_code get_openssl_error() {
+    static inline boost::system::error_code get_openssl_error() noexcept {
         return { static_cast<int>(ERR_get_error()), boost::asio::error::get_ssl_category() };
     }
 };
