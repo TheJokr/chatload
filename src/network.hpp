@@ -144,6 +144,11 @@ struct clients_context {
         std::for_each(this->writers.begin(), this->writers.end(), std::forward<T>(func));
     }
 
+    inline bool all_down() {
+        return std::all_of(this->writers.begin(), this->writers.end(),
+                           [](const tcp_writer& writer) { return static_cast<bool>(writer.get_error()); });
+    }
+
 private:
     static inline boost::system::error_code get_openssl_error() noexcept {
         return { static_cast<int>(ERR_get_error()), boost::asio::error::get_ssl_category() };
