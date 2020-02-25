@@ -47,10 +47,11 @@ namespace chatload {
 namespace reader {
 bool readUTF16LE(const chatload::string& path, std::u16string& buffer);
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init): duration is always overwritten before first read
 struct read_stat {
     std::uint_least64_t files_read = 0;
     std::uint_least64_t bytes_read = 0;
-    std::chrono::seconds duration;  // NOLINT(cppcoreguidelines-pro-type-member-init): duration is default initialized
+    std::chrono::seconds duration;
 };
 
 read_stat readLogs(const chatload::cli::options& args, const std::basic_regex<chatload::char_t>& pattern,

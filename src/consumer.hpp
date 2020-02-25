@@ -62,6 +62,7 @@ public:
         boost::optional<std::system_error> error;
     };
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init): duration is always overwritten before first read
     struct consume_stat {
         using error_variant = boost::variant2::variant<
                 std::vector<host_status>,  // Must be first for default initialization
