@@ -24,17 +24,82 @@
 #define CHATLOAD_CONSUMER_H
 
 
+// C headers
+#include <cstdint>
+
 // Containers
 #include <string>
-#include <unordered_set>
+#include <vector>
+
+// Exceptions
+#include <system_error>
+
+// Utility
+#include <chrono>
+
+// Boost
+#include <boost/variant2/variant.hpp>
+#include <boost/optional.hpp>
+#include <boost/asio/buffer.hpp>
 
 // lock-free queue
 #include <readerwriterqueue.h>
 
+// chatload components
+#include "cli.hpp"
+#include "stringcache.hpp"
+#include "compressor.hpp"
+#include "network.hpp"
+
 namespace chatload {
-namespace consumer {
-void consumeLogs(moodycamel::ReaderWriterQueue<std::u16string>& queue, std::unordered_set<std::u16string>& out);
-}  // namespace consumer
+class consumer {
+private:
+    using queue_t = moodycamel::ReaderWriterQueue<std::u16string>;
+
+public:
+    struct host_status {
+        const chatload::cli::host& host;
+        boost::optional<std::system_error> error;
+    };
+
+    struct consume_stat {
+        using error_variant = boost::variant2::variant<
+                std::vector<host_status>,  // Must be first for default initialization
+                std::system_error
+        >;
+
+        std::uint_least64_t names_processed = 0;
+        std::uint_least64_t size_compressed = 0;
+        std::chrono::seconds duration;
+        error_variant error;
+    };
+
+    static consume_stat consumeLogs(const chatload::cli::options& args, queue_t& queue);
+
+private:
+    // Deduplication cache (18 bits index, default 32 bits values -> 1 MiB cache)
+    static constexpr std::size_t CACHE_INDEX_BITS = 18;
+    chatload::string_cache<CACHE_INDEX_BITS> cache;
+
+    // LZ4 compression
+    boost::optional<boost::asio::const_buffer> next_comp_buf;
+    chatload::streaming_optional_lz4_compressor compressor;
+
+    // Socket connections
+    chatload::network::clients_context ctx;
+
+    // Average name length is ~12 characters (+1 for newline), roughly 20 names per file
+    static constexpr std::size_t AVG_BUF_SIZE = 20 * ((12 + 1) * sizeof(std::u16string::value_type));
+
+    // Batch process 10 files before polling the IO loop
+    static constexpr std::size_t FILES_PER_IO_POLL = 10;
+
+    // Check for errors on all writers every 5th IO loop poll
+    static constexpr std::size_t IO_POLL_PER_ERR_CHECK = 5;
+
+    explicit consumer(const chatload::cli::options& args);
+    void run(queue_t& queue, bool& reader_finished, consume_stat& res);
+};
 }  // namespace chatload
 
 
