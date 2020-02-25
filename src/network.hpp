@@ -72,23 +72,23 @@ public:
     explicit tcp_writer(const chatload::cli::host& host, boost::asio::io_context& io_ctx,
                         boost::asio::ssl::context& ssl_ctx, boost::asio::ip::tcp::resolver& tcp_resolver);
 
-    inline const auto& get_host() const { return this->host; }
-    inline const auto& get_error() const { return this->net_err; }
+    const auto& get_host() const noexcept { return this->host; }
+    const auto& get_error() const noexcept { return this->net_err; }
 
-    inline void schedule() {
+    void schedule() {
         if (this->write_queued || this->net_err) { return; }
         this->write_queued = true;
         boost::asio::post(this->io_ctx, [this] { this->write_hdlr({}, {}); });
     }
 
     template<typename T>
-    inline void push_buffer(T&& buffer) {
+    void push_buffer(T&& buffer) {
         if (this->net_err) { return; }
         this->buffers.push_back(std::forward<T>(buffer));
         this->schedule();
     }
 
-    inline void shutdown() {
+    void shutdown() {
         if (this->net_err) { return; }
         this->shutdown_queued = true;
         this->schedule();
@@ -108,7 +108,7 @@ struct clients_context {
     boost::asio::ip::tcp::resolver tcp_resolver{ io_ctx };
     std::vector<tcp_writer> writers;
 
-    inline explicit clients_context(const chatload::cli::options& args) {
+    explicit clients_context(const chatload::cli::options& args) {
         this->ssl_ctx.set_verify_mode(args.insecure_tls ? boost::asio::ssl::verify_none : boost::asio::ssl::verify_peer);
         SSL_CTX* ssl_ctx_native = this->ssl_ctx.native_handle();
 
@@ -140,17 +140,17 @@ struct clients_context {
     }
 
     template<typename T>
-    inline void for_each(T&& func) {
+    void for_each(T&& func) {
         std::for_each(this->writers.begin(), this->writers.end(), std::forward<T>(func));
     }
 
-    inline bool all_down() {
+    bool all_down() {
         return std::all_of(this->writers.begin(), this->writers.end(),
                            [](const tcp_writer& writer) { return static_cast<bool>(writer.get_error()); });
     }
 
 private:
-    static inline boost::system::error_code get_openssl_error() noexcept {
+    static boost::system::error_code get_openssl_error() noexcept {
         return { static_cast<int>(ERR_get_error()), boost::asio::error::get_ssl_category() };
     }
 };

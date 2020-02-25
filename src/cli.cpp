@@ -50,12 +50,12 @@ namespace clcfg = chatload::constants;
 
 namespace {
 template<class T>
-inline po::typed_value<T, chatload::char_t>* po_value_t(T* v = nullptr) {
+po::typed_value<T, chatload::char_t>* po_value_t(T* v = nullptr) {
     // See po::value()/po::wvalue. Ownership is passed to po::options_description.
     return new po::typed_value<T, chatload::char_t>(v);
 }
 
-inline void parseConfig(const chatload::string& file, const po::options_description& cfg_options, po::variables_map& vm) {
+void parseConfig(const chatload::string& file, const po::options_description& cfg_options, po::variables_map& vm) {
     std::basic_ifstream<chatload::char_t> in(file);
     po::store(po::parse_config_file(in, cfg_options), vm);
 }

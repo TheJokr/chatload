@@ -53,7 +53,7 @@ public:
 
     // Returns whether the key was added or not, i.e., whether the key is new or not
     template<typename Sequence>
-    inline bool add_if_absent(const Sequence& key) noexcept {
+    bool add_if_absent(const Sequence& key) noexcept {
         constexpr std::size_t full_mask = (1ull << (index_bits + sizeof(T) * CHAR_BIT)) - 1;
         constexpr std::size_t idx_mask = (1ull << index_bits) - 1;
         constexpr std::size_t value_mask = full_mask ^ idx_mask;
