@@ -31,12 +31,12 @@
 
 // Streams
 #include <sstream>
+#include <iomanip>
 
 // Containers
 #include <string>
 
 // Utility
-#include <utility>
 #include <chrono>
 
 // Boost
@@ -45,20 +45,29 @@
 
 namespace chatload {
 namespace format {
-inline std::pair<long double, std::string> format_size(std::uint_least64_t bytes) {
+inline std::string format_size(std::uint_least64_t bytes) {
     auto size = static_cast<long double>(bytes);
-
-    std::string prefix = "gigabyte";
+    const char* unit = "gigabyte";
     for (const auto val : { "byte", "kilobyte", "megabyte" }) {
         if (size < 1000) {
-            prefix = val;
+            unit = val;
             break;
         }
         size /= 1000;
     }
-    if (size > 1) { prefix += 's'; }
 
-    return { size, std::move(prefix) };
+    // Format using fixed notation, but trim trailing zeros (and dot, if possible)
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << size;
+
+    std::string res = oss.str();
+    while (res.back() == '0') { res.pop_back(); }
+    if (res.back() == '.') { res.pop_back(); }
+
+    // Add unit (plural if size is not rounded to 1.00)
+    res.append(1, ' ').append(unit);
+    if (size >= 1.005l || size < 0.995l) { res.append(1, 's'); }
+    return res;
 }
 
 template<class Rep, class Period>
