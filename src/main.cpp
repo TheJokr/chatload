@@ -21,22 +21,23 @@
 // Containers
 #include <string>
 #include <vector>
-#include <unordered_set>
 
 // Exceptions
 #include <exception>
 #include <stdexcept>
+#include <system_error>
 
 // Threading
-#include <thread>
+#include <future>
 
 // Utility
-#include <iomanip>
+#include <functional>
+#include <chrono>
 #include <regex>
 
-// C++ REST SDK (HTTP Client, JSON)
-#include <cpprest/http_client.h>
-#include <cpprest/json.h>
+// Boost
+#include <boost/variant2/variant.hpp>
+#include <boost/program_options/errors.hpp>
 
 // lock-free queue
 #include <readerwriterqueue.h>
@@ -46,11 +47,9 @@
 #include "constants.hpp"
 #include "exception.hpp"
 #include "cli.hpp"
-#include "config.hpp"
 #include "os.hpp"
 #include "reader.hpp"
 #include "consumer.hpp"
-#include "network.hpp"
 #include "format.hpp"
 
 // main function name
@@ -61,87 +60,111 @@
 #endif  // _WIN32
 
 
-int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
-    chatload::cli::options args;
-    try {
-        args = chatload::cli::parseArgs(argc, argv);
-    } catch (std::logic_error& ex) {
-        // boost::program_options error
-        chatload::cerr << "ERROR: " << ex.what() << std::endl;
-        chatload::cout << "See -h/--help for allowed options" << std::endl;
-        return 1;
+namespace {
+constexpr std::chrono::seconds ASYNC_WAIT_TICK(1);
+constexpr std::size_t MAX_QUEUE_ENTRIES = 30;
+using queue_t = moodycamel::ReaderWriterQueue<std::u16string>;
+
+chatload::reader::read_stat run_reader(const chatload::cli::options& args, queue_t& queue) {
+    using regex_t = std::basic_regex<chatload::char_t>;
+    regex_t filename_regex(args.regex, regex_t::optimize | regex_t::nosubs | regex_t::ECMAScript);
+
+    if (args.verbose) {
+        chatload::cout << "Files read:\n";
+        return chatload::reader::readLogs(args, filename_regex, queue, [](const chatload::os::dir_entry& file) {
+            chatload::cout << file.name << " (" << file.size << " byte" << (file.size != 1 ? "s)\n" : ")\n");
+        });
+    } else {
+        chatload::cout << "Reading files...\n";
+        return chatload::reader::readLogs(args, filename_regex, queue);
+    }
+}
+
+struct consumer_error_visitor {
+    const chatload::consumer::consume_stat& consume_res;
+
+    bool operator()(const std::vector<chatload::consumer::host_status>& host_status) const {
+        std::size_t err_hosts = 0;
+        for (const auto& stat : host_status) {
+            if (stat.error) {
+                ++err_hosts;
+                const std::system_error& ex = stat.error.get();
+
+                chatload::cerr << "ERROR (" << stat.host.name.c_str();
+                if (stat.host.port != chatload::DEFAULT_PORT) { chatload::cerr << ':' << stat.host.port.c_str(); }
+                chatload::cerr << "): " << ex.what() << '\n';
+            }
+        }
+        if (err_hosts > 0) { chatload::cerr << std::flush; }
+
+        std::string dur = chatload::format::format_duration(this->consume_res.duration);
+        if (err_hosts < host_status.size()) {
+            std::string bytes_sent = chatload::format::format_size(this->consume_res.size_compressed);
+            chatload::cout << "Uploaded " << this->consume_res.names_processed << " character names ("
+                           << bytes_sent.c_str() << ") successfully to " << (host_status.size() - err_hosts)
+                           << " remote hosts within " << dur.c_str() << std::endl;
+        } else {
+            chatload::cout << "All " << host_status.size() << " uploads failed within " << dur.c_str() << std::endl;
+        }
+
+        return err_hosts > 0;
     }
 
-    chatload::config cfg(L"config.json");  // TODO: remove
+    bool operator()(const std::system_error& ex) const {
+        chatload::cerr << "ERROR: " << ex.what() << std::endl;
+        return true;
+    }
+};
 
-    chatload::cout << "This app scrapes your EVE Online chat logs for character names and adds them to a database\n"
-                   << std::endl;
 
+int run_chatload(const chatload::cli::options& args) {
+    bool err_res = false;
+    chatload::cout << "This app scrapes your EVE Online chat logs for character names and "
+                   << "adds them to a configurable set of remote databases\n" << std::endl;
 
-    // Read logs
-    std::unordered_set<std::u16string> names;
-    moodycamel::ReaderWriterQueue<std::u16string> queue;
+    // Extract character names and upload them asynchronously
+    queue_t queue(MAX_QUEUE_ENTRIES);
+    auto consumer_fut = std::async(std::launch::async, chatload::consumer::consumeLogs,
+                                   std::cref(args), std::ref(queue));
 
-    chatload::reader::read_stat res;
-    using regex_t = std::basic_regex<chatload::char_t>;
-    const regex_t regex(args.regex, regex_t::optimize | regex_t::ECMAScript);
-    const auto file_cb = [](const chatload::os::dir_entry& file) {
-        chatload::cout << file.name << " (" << file.size << " byte" << (file.size != 1 ? "s)" : ")") << "\n";
-    };
-
-    // Extract character names asynchronously
-    std::thread consumer(chatload::consumer::consumeLogs, std::ref(queue), std::ref(names));
-
+    // Read logs in main thread
     try {
-        if (args.verbose) {
-            chatload::cout << "Files read:\n";
-            res = chatload::reader::readLogs(args, regex, queue, file_cb);
-        } else {
-            chatload::cout << "Reading files...\n";
-            res = chatload::reader::readLogs(args, regex, queue);
-        }
+        chatload::reader::read_stat read_res = run_reader(args, queue);
+
+        std::string bytes_read = chatload::format::format_size(read_res.bytes_read);
+        std::string dur = chatload::format::format_duration(read_res.duration);
+        chatload::cout << "Total of " << read_res.files_read << " files with a size of "
+                       << bytes_read.c_str() << " processed within " << dur.c_str() << std::endl;
     } catch (chatload::runtime_error& ex) {
         chatload::cerr << "ERROR: " << ex.what_cl() << std::endl;
-        chatload::cout << "Failed to read logs, shutting down" << std::endl;
 
-        // Terminate consumer gracefully
-        file_queue.enqueue(std::u16string());
-        consumer.join();
-        return 1;
+        // Terminate consumer gracefully and set error exit code
+        queue.enqueue(std::u16string());
+        err_res = true;
     }
 
-    auto fmt = chatload::format::format_size(res.bytes_read);
-    std::string dur = chatload::format::format_duration(res.duration);
+    // Retrieve result from consumer
+    chatload::cout << "\nWaiting for uploads to finish..." << std::flush;
+    while (consumer_fut.wait_for(ASYNC_WAIT_TICK) == std::future_status::timeout) { chatload::cout << '.'; }
+    chatload::cout << " done!" << std::endl;
 
-    chatload::cout << "Total of " << res.files_read << " files with a size of " << std::fixed << std::setprecision(2)
-                   << fmt.first << " " << fmt.second.c_str() << " read within " << dur.c_str() << std::endl;
+    chatload::consumer::consume_stat consume_res = consumer_fut.get();
+    err_res |= boost::variant2::visit(consumer_error_visitor{consume_res}, consume_res.error);
 
-    consumer.join();
-    if (names.empty()) { return 0; }
+    return err_res;
+}
+}  // Anonymous namespace
 
 
-    // Upload character names
-    chatload::cout << "\nEstablishing connection(s)...";
-
-    std::vector<pplx::task<void>> reqs;
+int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
     try {
-        reqs = chatload::network::sendNames(cfg.get(L"POST").as_array(), names);
-    } catch (std::exception& ex) {
-        chatload::cout << "\n";
+        chatload::cli::options args = chatload::cli::parseArgs(argc, argv);
+        return run_chatload(args);
+    } catch (const boost::program_options::error& ex) {
         chatload::cerr << "ERROR: " << ex.what() << std::endl;
-        chatload::cout << "Failed to read endpoints, shutting down" << std::endl;
-        return 1;
+        chatload::cout << "See -h/--help for allowed options" << std::endl;
+    } catch (const std::exception& ex) {
+        chatload::cerr << "UNEXPECTED ERROR: " << ex.what() << std::endl;
     }
-
-    chatload::cout << " " << reqs.size() << " connection(s) established\n"
-                   << "Adding character names to the endpoint(s)" << std::endl;
-
-    try {
-        pplx::when_all(reqs.cbegin(), reqs.cend()).wait();
-    } catch (web::http::http_exception& ex) {
-        chatload::cerr << "ERROR: " << ex.what() << std::endl;
-        chatload::cout << "Failed to add character names to one of the endpoints" << std::endl;
-    }
-
-    return 0;
+    return 1;
 }
