@@ -116,6 +116,50 @@ cf_unique_ref<CFArrayRef> getRootsFromSystem() noexcept {
 
     return { tmp, &CFRelease };
 }
+
+
+class wordexp_helper {
+private:
+    int flags;
+    wordexp_t we = {};
+
+    void release() noexcept {
+        if ((this->flags & WRDE_REUSE) == 0) { return; }
+
+        wordfree(&this->we);
+        this->flags &= ~WRDE_REUSE;
+    }
+
+public:
+    explicit wordexp_helper(int flags = WRDE_NOCMD) noexcept : flags(flags & ~WRDE_REUSE) {}
+    wordexp_helper(const wordexp_helper& other) = delete;
+    wordexp_helper(wordexp_helper&& other) noexcept : flags(std::move(other.flags)), we(std::move(other.we)) {
+        other.flags &= ~WRDE_REUSE;
+        other.we = {};
+    }
+
+    wordexp_helper& operator=(const wordexp_helper& other) = delete;
+    wordexp_helper& operator=(wordexp_helper&& other) noexcept {
+        this->release();
+        this->flags = std::move(other.flags);
+        this->we = std::move(other.we);
+
+        other.flags &= ~WRDE_REUSE;
+        other.we = {};
+        return *this;
+    }
+
+    ~wordexp_helper() { this->release(); }
+
+    int wordexp(const char* words) noexcept {
+        int res = ::wordexp(words, &this->we, this->flags);
+        this->flags |= WRDE_REUSE;
+        return res;
+    }
+
+    std::size_t size() const noexcept { return this->we.we_wordc; }
+    const char* operator[](std::size_t pos) const noexcept { return this->we.we_wordv[pos]; }
+};
 }  // Anonymous namespace
 
 
@@ -133,19 +177,14 @@ void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
 chatload::string chatload::os::getLogFolder() {
     std::string path;
     std::array<char, PATH_MAX> darres = {};
-    wordexp_t we;
+    wordexp_helper we;
 
     auto state = sysdir_start_search_path_enumeration(SYSDIR_DIRECTORY_DOCUMENT, SYSDIR_DOMAIN_MASK_USER);
     while ((state = sysdir_get_next_search_path_enumeration(state, darres.data())) != 0) {
-        if (wordexp(darres.data(), &we, WRDE_NOCMD) == 0) {
-            if (we.we_wordc > 0) {
-                path = we.we_wordv[0];
-                wordfree(&we);
-                path += "/EVE/logs/Chatlogs";
-                break;
-            } else {
-                wordfree(&we);
-            }
+        if (we.wordexp(darres.data()) == 0 && we.size() > 0) {
+            path = we[0];
+            path += "/EVE/logs/Chatlogs";
+            break;
         }
     }
 
