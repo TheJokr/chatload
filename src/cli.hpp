@@ -58,8 +58,7 @@ struct options {
     // May be overwritten for individual hosts
     bool insecure_tls = false;
 
-    // File/directory with OpenSSL's CAfile/CApath format
-    // To be passed to SSL_CTX_load_verify_locations
+    // File/directory with OpenSSL's CAfile/CApath format to be passed to SSL_CTX_load_verify_locations
     boost::optional<std::string> ca_file, ca_path;
 
     // TLSv1.2/TLSv1.3 ciphers to use

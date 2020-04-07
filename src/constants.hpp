@@ -44,7 +44,7 @@ constexpr char CONFIG_HELP[] = "chatload.cfg";  // NOLINT(modernize-avoid-c-arra
 constexpr chatload::char_t CACHE_FILE[] = CHATLOAD_STRING("filecache.tsv");  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 
 // Network defaults
-constexpr char DEFAULT_HOST[] = "api.dashsec.com";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
+constexpr char DEFAULT_HOST[] = "chatload.bloecher.dev";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 constexpr char DEFAULT_PORT[] = "36643";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 
 // OpenSSL defaults

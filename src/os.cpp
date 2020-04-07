@@ -43,11 +43,7 @@ chatload::os::dir_iter& chatload::os::dir_iter::operator++() {
 }
 
 chatload::deref_proxy<chatload::os::dir_iter::value_type> chatload::os::dir_iter::operator++(int) {
-    chatload::deref_proxy<value_type> res({});
-    if (this->hdl_ref) {
-        res = chatload::deref_proxy<value_type>(this->hdl_ref->cur_entry);
-    }
-
+    chatload::deref_proxy<value_type> res(this->hdl_ref ? this->hdl_ref->cur_entry : value_type{});
     ++(*this);
     return res;
 }

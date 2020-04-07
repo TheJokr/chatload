@@ -174,7 +174,7 @@ chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv
 
         std::stringstream ss;
         ss << visible_options;
-        std::string desc(ss.str());
+        std::string desc = ss.str();
         desc.pop_back();
 
         chatload::cout << "Usage: " << argv[0] << " [OPTION]... [path to EVE logs]\n\n"

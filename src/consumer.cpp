@@ -90,7 +90,6 @@ chatload::consumer::consume_stat chatload::consumer::consumeLogs(const chatload:
         // res.error is default-initialized to the first type
         std::vector<host_status>& host_stat = boost::variant2::get<0>(res.error);
         host_stat.reserve(instance.ctx.writers.size());
-
         instance.ctx.for_each([&host_stat](chatload::network::tcp_writer& writer) {
             host_stat.push_back({ writer.get_host(), writer.get_error().map(to_std_error) });
         });
@@ -131,7 +130,7 @@ void chatload::consumer::run(queue_t& queue, bool& reader_finished, consume_stat
         this->ctx.for_each(push_next_comp_buf);
     }
     io_ctx.run();
-    io_ctx.reset();
+    io_ctx.restart();
 
     std::u16string file;
     chatload::streaming_optional_lz4_compressor::buffer_t file_buf;
@@ -179,7 +178,7 @@ void chatload::consumer::run(queue_t& queue, bool& reader_finished, consume_stat
 
         if (run_io_poll) {
             io_ctx.poll();
-            io_ctx.reset();
+            io_ctx.restart();
 
             if (iteration % (FILES_PER_IO_POLL * IO_POLL_PER_ERR_CHECK) == 0 && this->ctx.all_down()) {
                 // There won't be any further progress on uploads, abort now
