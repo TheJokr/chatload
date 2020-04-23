@@ -37,6 +37,7 @@
 #include <Windows.h>
 #include <objbase.h>
 #include <ShlObj.h>
+#include <wincrypt.h>
 
 // OpenSSL
 #include <openssl/ssl.h>
@@ -47,7 +48,25 @@
 
 void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
     if (!ctx) { return; }
-    // TODO: implement cert import for Windows
+
+    X509_STORE* verify_store = SSL_CTX_get_cert_store(ctx);
+    if (!verify_store) { return; }
+
+    constexpr DWORD flags = CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG | CERT_SYSTEM_STORE_CURRENT_USER;
+    auto system_store = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, NULL, flags, L"ROOT");
+    if (!system_store) { return; }
+
+    PCCERT_CONTEXT cert_export = NULL;
+    while ((cert_export = CertEnumCertificatesInStore(system_store, cert_export)) != nullptr) {
+        const unsigned char* cert_raw = cert_export->pbCertEncoded;
+        X509* cert = d2i_X509(NULL, &cert_raw, cert_export->cbCertEncoded);
+        if (cert) {
+            X509_STORE_add_cert(verify_store, cert);
+            OPENSSL_free(cert);
+        }
+    }
+
+    CertCloseStore(system_store, 0);
 }
 
 
