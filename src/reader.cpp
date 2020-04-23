@@ -41,7 +41,6 @@
 
 // chatload components
 #include "common.hpp"
-#include "exception.hpp"
 #include "cli.hpp"
 #include "os.hpp"
 #include "filecache.hpp"
@@ -76,12 +75,7 @@ chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::opti
     const auto start_time = std::chrono::system_clock::now();
 
     chatload::string log_folder = args.log_folder.value_or_eval(chatload::os::getLogFolder);
-    chatload::os::dir_handle log_dir;
-    try {
-        log_dir = chatload::os::dir_handle(log_folder);
-    } catch (std::runtime_error&) {
-        throw chatload::runtime_error(CHATLOAD_STRING("Failed to search for logs in ") + log_folder);
-    }
+    chatload::os::dir_handle log_dir(log_folder);
 
     chatload::file_cache::cache_t cache;
     if (args.use_cache) {

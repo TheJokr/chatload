@@ -45,7 +45,6 @@
 // chatload components
 #include "common.hpp"
 #include "constants.hpp"
-#include "exception.hpp"
 #include "cli.hpp"
 #include "os.hpp"
 #include "reader.hpp"
@@ -135,8 +134,8 @@ int run_chatload(const chatload::cli::options& args) {
         std::string dur = chatload::format::format_duration(read_res.duration);
         chatload::cout << "Total of " << read_res.files_read << " files with a size of "
                        << bytes_read.c_str() << " processed within " << dur.c_str() << std::endl;
-    } catch (chatload::runtime_error& ex) {
-        chatload::cerr << "ERROR: " << ex.what_cl() << std::endl;
+    } catch (std::system_error& ex) {
+        chatload::cerr << "ERROR: " << ex.what() << std::endl;
 
         // Terminate consumer gracefully and set error exit code
         queue.enqueue(std::u16string());

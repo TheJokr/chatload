@@ -28,7 +28,7 @@
 #include <string>
 
 // Exceptions
-#include <stdexcept>
+#include <system_error>
 
 // Utility
 #include <utility>
@@ -109,7 +109,7 @@ chatload::os::dir_handle::dir_handle(const chatload::string& dir, bool enable_di
                                              FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
     if (this->state->find_hdl == INVALID_HANDLE_VALUE) {
-        throw std::runtime_error("Error opening dir_handle (Code " + std::to_string(GetLastError()) + ")");
+        throw std::system_error({ static_cast<int>(GetLastError()), std::system_category() }, "FindFirstFileEx");
     }
 
     if (!enable_dirs) { this->state->file_attrs |= FILE_ATTRIBUTE_DIRECTORY; }
@@ -157,7 +157,7 @@ bool chatload::os::dir_handle::fetch_next() {
     if (!ok) {
         DWORD ec = GetLastError();
         if (ec != ERROR_NO_MORE_FILES) {
-            throw std::runtime_error("Error retrieving next file in dir_handle (Code " + std::to_string(ec) + ")");
+            throw std::system_error({ static_cast<int>(ec), std::system_category() }, "FindNextFile");
         }
 
         this->status = EXHAUSTED;

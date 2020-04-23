@@ -33,7 +33,7 @@
 #include <array>
 
 // Exceptions
-#include <stdexcept>
+#include <system_error>
 
 // Utility
 #include <memory>
@@ -240,7 +240,7 @@ chatload::os::dir_handle::dir_handle(const chatload::string& dir, bool enable_di
     this->state->dirp = opendir(dir.c_str());
 
     if (!this->state->dirp) {
-        throw std::runtime_error("Error opening dir_handle (Code " + std::to_string(errno) + ")");
+        throw std::system_error({ errno, std::system_category() }, "opendir");
     }
 
     this->fetch_next();
@@ -280,7 +280,7 @@ bool chatload::os::dir_handle::fetch_next() {
 
     if (!this->state->entry) {
         if (errno) {
-            throw std::runtime_error("Error retrieving next file in dir_handle (Code " + std::to_string(errno) + ")");
+            throw std::system_error({ errno, std::system_category() }, "readdir");
         }
 
         this->status = EXHAUSTED;
@@ -288,7 +288,7 @@ bool chatload::os::dir_handle::fetch_next() {
     }
 
     if (fstatat(dirfd(this->state->dirp), this->state->entry->d_name, &this->state->entry_stat, 0) == -1) {
-        throw std::runtime_error("Error stating next file in dir_handle (Code " + std::to_string(errno) + ")");
+        throw std::system_error({ errno, std::system_category() }, "fstatat");
     }
 
     this->cur_entry = dir_entry_from_dirent_stat(this->state->entry, &this->state->entry_stat);
