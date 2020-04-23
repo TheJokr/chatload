@@ -20,8 +20,6 @@
 
 // WinAPI configuration
 #define WIN32_LEAN_AND_MEAN
-#define NTDDI_VERSION NTDDI_WIN7  // NOLINT(cppcoreguidelines-macro-usage)
-#define _WIN32_WINNT _WIN32_WINNT_WIN7  // NOLINT(cppcoreguidelines-macro-usage)
 
 // Forward declaration
 #include "os.hpp"

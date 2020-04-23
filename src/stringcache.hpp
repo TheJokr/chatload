@@ -61,7 +61,7 @@ public:
         // xxHash takes size in bytes
         XXH64_hash_t hash = XXH3_64bits(key.data(), sizeof(typename Sequence::value_type) * key.size());
         std::size_t idx = hash & idx_mask;
-        T val = (hash & value_mask) >> index_bits;
+        T val = static_cast<T>((hash & value_mask) >> index_bits);
 
         if (this->cache[idx] == val) {
             return false;

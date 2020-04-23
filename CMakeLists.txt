@@ -20,7 +20,7 @@ set(Boost_USE_STATIC_LIBS ON)
 if (MSVC)
     set(Boost_USE_STATIC_RUNTIME ON)
 endif()
-find_package(Boost 1.70 REQUIRED COMPONENTS program_options)
+find_package(Boost 1.71 REQUIRED COMPONENTS program_options)
 
 # OpenSSL (for Boost.Asio)
 if (WIN32)
@@ -43,10 +43,14 @@ add_library(xxhash INTERFACE)
 target_compile_definitions(xxhash INTERFACE "XXH_INLINE_ALL")
 target_include_directories(xxhash INTERFACE "ext/xxhash")
 
+# chatload
 add_executable(chatload "src/main.cpp" "src/cli.cpp" "src/reader.cpp" "src/os.cpp"
                    "src/filecache.cpp" "src/consumer.cpp" "src/network.cpp")
 if (WIN32)
     target_sources(chatload PRIVATE "src/os_win32.cpp")
+    target_compile_definitions(chatload PRIVATE "NTDDI_VERSION=NTDDI_WIN7" "_WIN32_WINNT=_WIN32_WINNT_WIN7"
+                                        "_WINSOCK_DEPRECATED_NO_WARNINGS" "UNICODE" "_UNICODE")
+    target_link_libraries(chatload PRIVATE "ws2_32" "gdi32" "advapi32" "crypt32" "user32" "ole32" "shell32" "kernel32")
 elseif (APPLE)
     target_sources(chatload PRIVATE "src/os_darwin.cpp")
     target_link_libraries(chatload PRIVATE "-framework CoreFoundation" "-framework Security")
