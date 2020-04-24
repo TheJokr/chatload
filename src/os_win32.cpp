@@ -71,16 +71,15 @@ void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
 
 
 chatload::string chatload::os::getLogFolder() {
-    std::wstring path;
     PWSTR winres;
-
     HRESULT hr = SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &winres);
-    if (SUCCEEDED(hr)) {
-        path = winres;
-        CoTaskMemFree(winres);
-        path += LR"(\EVE\logs\Chatlogs)";
+    if (!SUCCEEDED(hr)) {
+        throw std::system_error({ hr, std::system_category() }, "SHGetKnownFolderPath");
     }
 
+    std::wstring path = winres;
+    CoTaskMemFree(winres);
+    path.append(LR"(\EVE\logs\Chatlogs)");
     return path;
 }
 

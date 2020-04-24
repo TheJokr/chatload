@@ -175,20 +175,19 @@ void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
 
 
 chatload::string chatload::os::getLogFolder() {
-    std::string path;
     std::array<char, PATH_MAX> darres = {};
     wordexp_helper we;
 
     auto state = sysdir_start_search_path_enumeration(SYSDIR_DIRECTORY_DOCUMENT, SYSDIR_DOMAIN_MASK_USER);
     while ((state = sysdir_get_next_search_path_enumeration(state, darres.data())) != 0) {
         if (we.wordexp(darres.data()) == 0 && we.size() > 0) {
-            path = we[0];
-            path += "/EVE/logs/Chatlogs";
-            break;
+            std::string path = we[0];
+            path.append("/EVE/logs/Chatlogs");
+            return path;
         }
     }
 
-    return path;
+    throw std::system_error({ ENOTSUP, std::generic_category() }, "searching for documents folder");
 }
 
 
