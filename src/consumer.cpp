@@ -144,7 +144,7 @@ void chatload::consumer::run(queue_t& queue, bool& reader_finished, consume_stat
             break;
         }
 
-        std::u16string::size_type beg, last = 0;
+        std::u16string::size_type beg, last = 0;  // NOLINT(cppcoreguidelines-init-variables): initialized below
         while ((beg = file.find('[', last)) != std::u16string::npos) {
             last = beg + 1;
             boost::optional<boost::u16string_view> char_name = chatload::format::extract_name(extract_name_sv(file, beg));
@@ -155,7 +155,7 @@ void chatload::consumer::run(queue_t& queue, bool& reader_finished, consume_stat
             ++res.names_processed;
 
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): cast to bytes
-            auto name_ptr = reinterpret_cast<const unsigned char*>(name.data());
+            const auto* name_ptr = reinterpret_cast<const unsigned char*>(name.data());
             const auto name_len = sizeof(boost::u16string_view::value_type) * name.size();
 
             // Insert UTF-16LE newline (0x0A00) after name

@@ -102,7 +102,7 @@ public:
     explicit streaming_optional_lz4_compressor(LZ4F_preferences_t prefs, optional_asio_buffer& header_out) :
             max_buffer(LZ4F_compressBound(1, &prefs)) {
         {
-            LZ4F_cctx* temp;
+            LZ4F_cctx* temp;  // NOLINT(cppcoreguidelines-init-variables): initialized below
             if (LZ4F_createCompressionContext(&temp, LZ4F_VERSION) != 0) { return; }
             this->ctx.reset(temp);
         }

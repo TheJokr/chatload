@@ -51,7 +51,7 @@ chatload::file_cache::cache_t chatload::file_cache::load_from_file(const chatloa
     std::basic_ifstream<chatload::char_t> in(file);
 
     chatload::string f;
-    std::uint_least64_t wt;
+    std::uint_least64_t wt;  // NOLINT(cppcoreguidelines-init-variables): initialized below
     while (std::getline(in, f, CHATLOAD_STRING('\t'))) {
         in >> wt;
         in.ignore(std::numeric_limits<std::streamsize>::max(), CHATLOAD_STRING('\n'));

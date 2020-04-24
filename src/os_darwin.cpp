@@ -67,25 +67,27 @@ using cf_unique_ref = std::unique_ptr<typename std::remove_pointer<T>::type, dec
 void addAllCertsToStore(cf_unique_ref<CFArrayRef> certs_array, X509_STORE* store) noexcept {
     if (!certs_array || !store) { return; }
 
-    CFArrayApplyFunction(certs_array.get(), {0, CFArrayGetCount(certs_array.get())}, [](CFTypeRef cert_ref, void* store) {
-        CFDataRef cert_export;
-        if (SecItemExport(cert_ref, kSecFormatOpenSSL, 0, nullptr, &cert_export) != errSecSuccess) {
-            // Silently skip current certificate
-            return;
-        }
+    CFArrayApplyFunction(
+        certs_array.get(), { 0, CFArrayGetCount(certs_array.get()) },
+        [](CFTypeRef cert_ref, void* store) {
+            CFDataRef cert_export;  // NOLINT(cppcoreguidelines-init-variables): initialized below
+            if (SecItemExport(cert_ref, kSecFormatOpenSSL, 0, nullptr, &cert_export) != errSecSuccess) {
+                // Silently skip current certificate
+                return;
+            }
 
-        const unsigned char* cert_raw = CFDataGetBytePtr(cert_export);
-        X509* cert = d2i_X509(nullptr, &cert_raw, CFDataGetLength(cert_export));
-        if (!cert) {
-            // Silently skip current certificate
+            const unsigned char* cert_raw = CFDataGetBytePtr(cert_export);
+            X509* cert = d2i_X509(nullptr, &cert_raw, CFDataGetLength(cert_export));
+            if (!cert) {
+                // Silently skip current certificate
+                CFRelease(cert_export);
+                return;
+            }
+
+            X509_STORE_add_cert(static_cast<X509_STORE*>(store), cert);
             CFRelease(cert_export);
-            return;
-        }
-
-        X509_STORE_add_cert(static_cast<X509_STORE*>(store), cert);
-        CFRelease(cert_export);
-        OPENSSL_free(cert);
-    }, store);
+            OPENSSL_free(cert);
+        }, store);
 }
 
 cf_unique_ref<CFArrayRef> getRootsFromSearchList() noexcept {
@@ -96,11 +98,11 @@ cf_unique_ref<CFArrayRef> getRootsFromSearchList() noexcept {
     static std::array<CFTypeRef, query_entries> values = { kSecClassCertificate, kSecMatchLimitAll, kCFBooleanTrue,
                                                            kCFNull, kCFBooleanTrue };
     cf_unique_ref<CFDictionaryRef> query = {
-            CFDictionaryCreate(nullptr, keys.data(), values.data(), query_entries, nullptr, nullptr), &CFRelease
+        CFDictionaryCreate(nullptr, keys.data(), values.data(), query_entries, nullptr, nullptr), &CFRelease
     };
 
     // SecItemCopyMatching returns CFArray because of kSecMatchLimitAll
-    CFArrayRef tmp;
+    CFArrayRef tmp;  // NOLINT(cppcoreguidelines-init-variables): initialized below
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     if (!query || SecItemCopyMatching(query.get(), reinterpret_cast<CFTypeRef*>(&tmp)) != errSecSuccess) {
         // Silently ignore errors while retrieving certificates
@@ -111,7 +113,7 @@ cf_unique_ref<CFArrayRef> getRootsFromSearchList() noexcept {
 }
 
 cf_unique_ref<CFArrayRef> getRootsFromSystem() noexcept {
-    CFArrayRef tmp;
+    CFArrayRef tmp;  // NOLINT(cppcoreguidelines-init-variables): initialized below
     if (SecTrustCopyAnchorCertificates(&tmp) != errSecSuccess) {
         // Silently ignore errors while retrieving certificates
         tmp = nullptr;
@@ -127,17 +129,18 @@ private:
     wordexp_t we = {};
 
     void release() noexcept {
-        if ((this->flags & WRDE_REUSE) == 0) { return; }
+        if ((this->flags & WRDE_REUSE) == 0) { return; }  // NOLINT(hicpp-signed-bitwise)
 
         wordfree(&this->we);
-        this->flags &= ~WRDE_REUSE;
+        this->flags &= ~WRDE_REUSE;  // NOLINT(hicpp-signed-bitwise)
     }
 
 public:
+    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     explicit wordexp_helper(int flags = WRDE_NOCMD) noexcept : flags(flags & ~WRDE_REUSE) {}
     wordexp_helper(const wordexp_helper& other) = delete;
     wordexp_helper(wordexp_helper&& other) noexcept : flags(std::move(other.flags)), we(std::move(other.we)) {
-        other.flags &= ~WRDE_REUSE;
+        other.flags &= ~WRDE_REUSE;  // NOLINT(hicpp-signed-bitwise)
         other.we = {};
     }
 
@@ -147,7 +150,7 @@ public:
         this->flags = std::move(other.flags);
         this->we = std::move(other.we);
 
-        other.flags &= ~WRDE_REUSE;
+        other.flags &= ~WRDE_REUSE;  // NOLINT(hicpp-signed-bitwise)
         other.we = {};
         return *this;
     }
@@ -155,8 +158,8 @@ public:
     ~wordexp_helper() { this->release(); }
 
     int wordexp(const char* words) noexcept {
-        int res = ::wordexp(words, &this->we, this->flags);
-        this->flags |= WRDE_REUSE;
+        int res = ::wordexp(words, &this->we, static_cast<int>(this->flags));
+        this->flags |= WRDE_REUSE;  // NOLINT(hicpp-signed-bitwise)
         return res;
     }
 
@@ -214,7 +217,7 @@ namespace {
 struct dtype_validator {
     bool enable_dirs : 1, enable_hidden : 1, enable_system : 1;
 
-    bool operator()(const struct dirent* d_entry) {
+    bool operator()(const struct dirent* d_entry) const {
         if (!d_entry) { return false; }
         switch (d_entry->d_type) {
             case DT_REG:

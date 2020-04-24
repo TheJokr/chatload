@@ -48,6 +48,7 @@ namespace format {
 inline std::string format_size(std::uint_least64_t bytes) {
     auto size = static_cast<long double>(bytes);
     const char* unit = "gigabyte";
+    // NOLINTNEXTLINE(readability-qualified-auto): decreases readability
     for (const auto val : { "byte", "kilobyte", "megabyte" }) {
         if (size < 1000) {
             unit = val;
@@ -66,6 +67,7 @@ inline std::string format_size(std::uint_least64_t bytes) {
 
     // Add unit (plural if size is not rounded to 1.00)
     res.append(1, ' ').append(unit);
+    // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers): not magic
     if (size >= 1.005l || size < 0.995l) { res.append(1, 's'); }
     return res;
 }

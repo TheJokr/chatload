@@ -148,9 +148,9 @@ int run_chatload(const chatload::cli::options& args) {
     chatload::cout << " done!" << std::endl;
 
     chatload::consumer::consume_stat consume_res = consumer_fut.get();
-    err_res |= boost::variant2::visit(consumer_error_visitor{consume_res}, consume_res.error);
+    err_res |= boost::variant2::visit(consumer_error_visitor{ consume_res }, consume_res.error);
 
-    return err_res;
+    return static_cast<int>(err_res);
 }
 }  // Anonymous namespace
 
