@@ -1,6 +1,43 @@
-language: python
-sudo: false
-install:
-  - wget https://raw.githubusercontent.com/google/styleguide/gh-pages/cpplint/cpplint.py
-script:
-  - python cpplint.py --linelength=120 --extensions=cpp --headers=hpp src/*
+language: cpp
+os: windows
+
+jobs:
+  include:
+    - os: windows
+      cache:
+        directories:
+          - /c/dep_libs
+      install:
+        - ./ci/windows_deps.bat
+        - choco install ninja
+      script: ./ci/windows_script.bat
+
+    - os: osx
+      osx_image: xcode11.3
+      cache:
+        directories:
+          - $HOME/Library/Caches/Homebrew
+      before_install:
+        # Xcode toolchains cause problems with clang-tidy
+        - sudo xcode-select -s /Library/Developer/CommandLineTools
+      before_cache:
+        - brew cleanup
+      script:
+        - mkdir build && OPENSSL_ROOT_DIR="$(brew --prefix openssl@1.1)" cmake -G Ninja -B build
+        - >-
+          $(brew --prefix llvm)/bin/clang-tidy -p build src/cli.* src/common.hpp src/compressor.hpp
+          src/constants.hpp src/consumer.* src/deref_proxy.hpp src/exception.hpp src/filecache.*
+          src/format.hpp src/main.cpp src/network.* src/os.* src/os_darwin.cpp src/reader.* src/stringcache.hpp
+        - cmake --build build -j 2 && ./build/chatload -hV
+
+addons:
+  homebrew:
+    packages:
+      - ninja
+      - openssl@1.1
+      - boost
+      - llvm
+
+git:
+  submodules: true
+  autocrlf: input

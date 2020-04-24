@@ -32,5 +32,6 @@
 *.app
 
 # Chatload
-/config.json
+/build
+/chatload.cfg
 /filecache.tsv
