@@ -31,6 +31,9 @@
 #include <memory>
 #include <iterator>
 
+// Boost
+#include <boost/optional.hpp>
+
 // OpenSSL
 #include <openssl/ssl.h>
 
@@ -42,6 +45,7 @@ namespace chatload {
 namespace os {
 void loadTrustedCerts(SSL_CTX* ctx) noexcept;
 chatload::string getLogFolder();
+boost::optional<chatload::string> getCacheFile();
 
 struct dir_entry {
     chatload::string name;

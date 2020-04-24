@@ -39,6 +39,9 @@
 #include <ShlObj.h>
 #include <wincrypt.h>
 
+// Boost
+#include <boost/optional.hpp>
+
 // OpenSSL
 #include <openssl/ssl.h>
 
@@ -80,6 +83,19 @@ chatload::string chatload::os::getLogFolder() {
     std::wstring path = winres;
     CoTaskMemFree(winres);
     path.append(LR"(\EVE\logs\Chatlogs)");
+    return path;
+}
+
+boost::optional<chatload::string> chatload::os::getCacheFile() {
+    PWSTR winres;
+    HRESULT hr = SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &winres);
+    if (!SUCCEEDED(hr)) {
+        return boost::none;
+    }
+
+    std::wstring path = winres;
+    CoTaskMemFree(winres);
+    path.append(LR"(\chatload\filecache.tsv)");
     return path;
 }
 

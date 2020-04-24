@@ -77,12 +77,11 @@ chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::opti
     chatload::string log_folder = args.log_folder.value_or_eval(chatload::os::getLogFolder);
     chatload::os::dir_handle log_dir(log_folder);
 
+    auto cache_file = args.cache_file ? args.cache_file : chatload::os::getCacheFile();
     chatload::file_cache::cache_t cache;
-    if (args.use_cache) {
-        cache = chatload::file_cache::load_from_file(args.cache_file);
-    }
+    if (args.use_cache && cache_file) { cache = chatload::file_cache::load_from_file(cache_file.get()); }
 
-    log_folder += chatload::PATH_SEP;
+    log_folder.append(1, chatload::PATH_SEP);
     for (const chatload::os::dir_entry& file : log_dir) {
         if (cache[file.name] >= file.write_time || !std::regex_match(file.name, pattern)) { continue; }
 
@@ -100,7 +99,7 @@ chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::opti
     // Empty string signalizes end of files
     queue.enqueue(std::u16string());
 
-    chatload::file_cache::save_to_file(cache, args.cache_file);
+    if (cache_file) { chatload::file_cache::save_to_file(cache, cache_file.get()); }
     res.duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start_time);
     return res;
 }

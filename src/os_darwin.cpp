@@ -50,6 +50,9 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <Security/Security.h>
 
+// Boost
+#include <boost/optional.hpp>
+
 // OpenSSL
 #include <openssl/ssl.h>
 
@@ -188,6 +191,22 @@ chatload::string chatload::os::getLogFolder() {
     }
 
     throw std::system_error({ ENOTSUP, std::generic_category() }, "searching for documents folder");
+}
+
+boost::optional<chatload::string> chatload::os::getCacheFile() {
+    std::array<char, PATH_MAX> darres = {};
+    wordexp_helper we;
+
+    auto state = sysdir_start_search_path_enumeration(SYSDIR_DIRECTORY_CACHES, SYSDIR_DOMAIN_MASK_USER);
+    while ((state = sysdir_get_next_search_path_enumeration(state, darres.data())) != 0) {
+        if (we.wordexp(darres.data()) == 0 && we.size() > 0) {
+            std::string path = we[0];
+            path.append("/chatload/filecache.tsv");
+            return path;
+        }
+    }
+
+    return boost::none;
 }
 
 

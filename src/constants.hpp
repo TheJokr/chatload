@@ -41,7 +41,6 @@ constexpr char VERSION[] = "2.0.0-dev";  // NOLINT(modernize-avoid-c-arrays,cppc
 // Config/CLI defaults
 constexpr chatload::char_t CONFIG_FILE[] = CHATLOAD_STRING("chatload.cfg");  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 constexpr char CONFIG_HELP[] = "chatload.cfg";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
-constexpr chatload::char_t CACHE_FILE[] = CHATLOAD_STRING("filecache.tsv");  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 
 // Network defaults
 constexpr char DEFAULT_HOST[] = "chatload.bloecher.dev";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
