@@ -71,7 +71,7 @@ chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::opti
                                                        moodycamel::ReaderWriterQueue<std::u16string>& queue,
                                                        // NOLINTNEXTLINE(performance-unnecessary-value-param)
                                                        std::function<void(const chatload::os::dir_entry&)> file_cb) {
-    chatload::reader::read_stat res;
+    chatload::reader::read_stat res{};
     const auto start_time = std::chrono::system_clock::now();
 
     chatload::string log_folder = args.log_folder.value_or_eval(chatload::os::getLogFolder);
@@ -82,12 +82,14 @@ chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::opti
     if (args.use_cache && cache_file) { cache = chatload::file_cache::load_from_file(cache_file.get()); }
 
     log_folder.append(1, chatload::PATH_SEP);
+    const auto base_end = log_folder.length();
     for (const chatload::os::dir_entry& file : log_dir) {
         if (cache[file.name] >= file.write_time || !std::regex_match(file.name, pattern)) { continue; }
+        log_folder.replace(base_end, chatload::string::npos, file.name);
 
         // If readUTF16LE returns true, buf.empty() always returns false
         std::u16string buf;
-        if (!chatload::reader::readUTF16LE(log_folder + file.name, buf)) { continue; }
+        if (!chatload::reader::readUTF16LE(log_folder, buf)) { continue; }
         while (!queue.try_enqueue(std::move(buf))) {}  // NOLINT(bugprone-use-after-move): not *actually* moved
 
         cache[file.name] = file.write_time;

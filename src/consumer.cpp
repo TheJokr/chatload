@@ -71,7 +71,7 @@ std::system_error to_std_error(const boost::system::system_error& error) {
 
 
 chatload::consumer::consume_stat chatload::consumer::consumeLogs(const chatload::cli::options& args, queue_t& queue) {
-    chatload::consumer::consume_stat res;
+    chatload::consumer::consume_stat res{};
     const auto start_time = std::chrono::system_clock::now();
     bool reader_finished = false;
 
