@@ -124,14 +124,19 @@ struct clients_context {
             throw boost::system::system_error(get_openssl_error(), "set_ciphersuites");
         }
 
-        if (args.ca_file || args.ca_path) {
-            const char* CAfile = args.ca_file ? args.ca_file.get().c_str() : nullptr;
-            const char* CApath = args.ca_path ? args.ca_path.get().c_str() : nullptr;
-            if (SSL_CTX_load_verify_locations(ssl_ctx_native, CAfile, CApath) != 1) {
-                throw boost::system::system_error(get_openssl_error(), "load_verify_locations");
+        // Only load certificates if verification is enabled for some host(s)
+        bool any_tls = std::any_of(args.hosts.begin(), args.hosts.end(),
+                                   [](const chatload::cli::host& host) { return !host.insecure_tls; });
+        if (!args.insecure_tls && any_tls) {
+            if (args.ca_file || args.ca_path) {
+                const char* CAfile = args.ca_file ? args.ca_file.get().c_str() : nullptr;
+                const char* CApath = args.ca_path ? args.ca_path.get().c_str() : nullptr;
+                if (SSL_CTX_load_verify_locations(ssl_ctx_native, CAfile, CApath) != 1) {
+                    throw boost::system::system_error(get_openssl_error(), "load_verify_locations");
+                }
             }
+            chatload::os::loadTrustedCerts(ssl_ctx_native);
         }
-        chatload::os::loadTrustedCerts(ssl_ctx_native);
 
         this->writers.reserve(args.hosts.size());
         for (const auto& host : args.hosts) {
