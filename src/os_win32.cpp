@@ -55,14 +55,16 @@ void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
     X509_STORE* verify_store = SSL_CTX_get_cert_store(ctx);
     if (!verify_store) { return; }
 
+    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     constexpr DWORD flags = CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG | CERT_SYSTEM_STORE_CURRENT_USER;
-    auto system_store = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, NULL, flags, L"ROOT");
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
+    HCERTSTORE system_store = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, NULL, flags, L"ROOT");
     if (!system_store) { return; }
 
-    PCCERT_CONTEXT cert_export = NULL;
+    PCCERT_CONTEXT cert_export = NULL;  // NOLINT(modernize-use-nullptr)
     while ((cert_export = CertEnumCertificatesInStore(system_store, cert_export)) != nullptr) {
         const unsigned char* cert_raw = cert_export->pbCertEncoded;
-        X509* cert = d2i_X509(NULL, &cert_raw, cert_export->cbCertEncoded);
+        X509* cert = d2i_X509(NULL, &cert_raw, cert_export->cbCertEncoded);  // NOLINT(modernize-use-nullptr)
         if (cert) {
             X509_STORE_add_cert(verify_store, cert);
             OPENSSL_free(cert);
@@ -74,8 +76,8 @@ void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
 
 
 chatload::string chatload::os::getLogFolder() {
-    PWSTR winres;
-    HRESULT hr = SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &winres);
+    PWSTR winres;  // NOLINT(cppcoreguidelines-init-variables): initialized below
+    HRESULT hr = SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &winres);  // NOLINT(modernize-use-nullptr)
     if (!SUCCEEDED(hr)) {
         throw std::system_error({ hr, std::system_category() }, "SHGetKnownFolderPath");
     }
@@ -87,8 +89,8 @@ chatload::string chatload::os::getLogFolder() {
 }
 
 boost::optional<chatload::string> chatload::os::getCacheFile() {
-    PWSTR winres;
-    HRESULT hr = SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &winres);
+    PWSTR winres;  // NOLINT(cppcoreguidelines-init-variables): initialized below
+    HRESULT hr = SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &winres);  // NOLINT(modernize-use-nullptr)
     if (!SUCCEEDED(hr)) {
         return boost::none;
     }
@@ -102,7 +104,9 @@ boost::optional<chatload::string> chatload::os::getCacheFile() {
 
 namespace {
 chatload::os::dir_entry dir_entry_from_find_data(const WIN32_FIND_DATAW& data) {
+    // NOLINTNEXTLINE(hicpp-signed-bitwise): false positive
     return { data.cFileName, (static_cast<DWORDLONG>(data.nFileSizeHigh) << 32) | data.nFileSizeLow,
+             // NOLINTNEXTLINE(hicpp-signed-bitwise): false positive
              (static_cast<DWORDLONG>(data.ftLastWriteTime.dwHighDateTime) << 32) | data.ftLastWriteTime.dwLowDateTime };
 }
 }  // Anonymous namespace
@@ -121,15 +125,16 @@ chatload::os::dir_handle::dir_handle(const chatload::string& dir, bool enable_di
                                      bool enable_hidden, bool enable_system) :
         status(ACTIVE), state(new iter_state{ 0, {}, {} }) {
     this->state->find_hdl = FindFirstFileExW((dir + L"\\*").c_str(), FindExInfoBasic, &this->state->find_data,
+                                             // NOLINTNEXTLINE(modernize-use-nullptr)
                                              FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
-    if (this->state->find_hdl == INVALID_HANDLE_VALUE) {
+    if (this->state->find_hdl == INVALID_HANDLE_VALUE) {  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
         throw std::system_error({ static_cast<int>(GetLastError()), std::system_category() }, "FindFirstFileEx");
     }
 
-    if (!enable_dirs) { this->state->file_attrs |= FILE_ATTRIBUTE_DIRECTORY; }
-    if (!enable_hidden) { this->state->file_attrs |= FILE_ATTRIBUTE_HIDDEN; }
-    if (!enable_system) { this->state->file_attrs |= FILE_ATTRIBUTE_SYSTEM; }
+    if (!enable_dirs) { this->state->file_attrs |= FILE_ATTRIBUTE_DIRECTORY; }  // NOLINT(hicpp-signed-bitwise)
+    if (!enable_hidden) { this->state->file_attrs |= FILE_ATTRIBUTE_HIDDEN; }  // NOLINT(hicpp-signed-bitwise)
+    if (!enable_system) { this->state->file_attrs |= FILE_ATTRIBUTE_SYSTEM; }  // NOLINT(hicpp-signed-bitwise)
 
     if (this->state->find_data.dwFileAttributes & this->state->file_attrs) { this->fetch_next(); }
     else { this->cur_entry = dir_entry_from_find_data(this->state->find_data); }
@@ -165,7 +170,9 @@ bool chatload::os::dir_handle::fetch_next() {
 
     // Explore files until either no more files are left
     // or a file that doesn't match file_attrs is found
-    bool ok;
+    bool ok;  // NOLINT(cppcoreguidelines-init-variables): initialized below
+    // return value is BOOL, true comparison is required by MSVC C4706
+    // NOLINTNEXTLINE(readability-implicit-bool-conversion,readability-simplify-boolean-expr)
     while ((ok = FindNextFileW(this->state->find_hdl, &this->state->find_data)) == true &&
            (this->state->find_data.dwFileAttributes & this->state->file_attrs)) {}
 

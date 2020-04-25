@@ -155,6 +155,7 @@ int run_chatload(const chatload::cli::options& args) {
 }  // Anonymous namespace
 
 
+// NOLINTNEXTLINE(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 int CHATLOAD_MAIN_FUNC_NAME(int argc, chatload::char_t* argv[]) {
     try {
         chatload::cli::options args = chatload::cli::parseArgs(argc, argv);

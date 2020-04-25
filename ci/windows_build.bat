@@ -20,5 +20,5 @@ clang-tidy src\cli.cpp src\cli.hpp src\common.hpp src\compressor.hpp src\constan
            src\filecache.hpp src\format.hpp src\main.cpp src\network.cpp  src\network.hpp src\os.cpp ^
            src\os.hpp src\os_win32.cpp src\reader.cpp src\reader.hpp src\stringcache.hpp ^
         -- -DBOOST_ALL_NO_LIB -DXXH_INLINE_ALL -DNTDDI_VERSION=NTDDI_WIN7 -D_WIN32_WINNT=_WIN32_WINNT_WIN7 ^
-           -DUNICODE -D_UNICODE -D_WINSOCK_DEPRECATED_NO_WARNINGS ^
-           -Iext\readerwriterqueue -Iext\lz4\lib -Iext\xxhash -isystem C:\dep_libs\include || exit /b 1
+           -DUNICODE -D_UNICODE -D_WINSOCK_DEPRECATED_NO_WARNINGS -Iext\readerwriterqueue -Iext\lz4\lib -Iext\xxhash ^
+           -isystem %CMAKE_PREFIX_PATH%\include -isystem %CMAKE_PREFIX_PATH%\include\boost-1_72 || exit /b 1
