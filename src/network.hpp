@@ -116,7 +116,8 @@ struct clients_context {
             throw boost::system::system_error(get_openssl_error(), "set_min_proto_version");
         }
 
-        if (args.cipher_list && SSL_CTX_set_cipher_list(ssl_ctx_native, args.cipher_list.get().c_str()) != 1) {
+        const char* cipher_list = args.cipher_list ? args.cipher_list.get().c_str() : chatload::OPENSSL_DEFAULT_CIPHER_LIST;
+        if (SSL_CTX_set_cipher_list(ssl_ctx_native, cipher_list) != 1) {
             throw boost::system::system_error(get_openssl_error(), "set_cipher_list");
         }
 
