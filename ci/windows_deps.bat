@@ -44,4 +44,4 @@ nmake /NOLOGO /S install || exit /b 1
 cd ..
 
 del /q boost_1_72_0.7z openssl-1.1.1g.tar.gz openssl-1.1.1g.tar
-rd /q /s boost_1_72_0 openssl-1.1.1g
+rmdir /q /s boost_1_72_0 openssl-1.1.1g
