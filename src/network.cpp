@@ -28,10 +28,12 @@
 #include <boost/system/error_code.hpp>
 
 // Boost.Asio
+#include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/write.hpp>
+#include <boost/asio/ssl/error.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
 #include <boost/asio/ssl/rfc2818_verification.hpp>
@@ -113,7 +115,10 @@ void chatload::network::tcp_writer::write_hdlr(const boost::system::error_code& 
 
 void chatload::network::tcp_writer::ssl_shutdown_hdlr(const boost::system::error_code& ec) {
     // Don't return on errors, shutdown stream instead
-    if (ec && !this->net_err) { this->net_err.emplace(ec, "async_shutdown"); }
+    // See https://stackoverflow.com/a/25703699. Both error codes are acceptable here.
+    if (ec && ec != asio::ssl::error::stream_truncated && ec != asio::error::eof && !this->net_err) {
+        this->net_err.emplace(ec, "async_shutdown");
+    };
 
     // Close stream after TLS shutdown
     boost::system::error_code ec_tcp;
