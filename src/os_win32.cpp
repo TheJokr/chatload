@@ -58,7 +58,7 @@ void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
     constexpr DWORD flags = CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG | CERT_SYSTEM_STORE_CURRENT_USER;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
-    HCERTSTORE system_store = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, NULL, flags, L"ROOT");
+    HCERTSTORE system_store = CertOpenStore(CERT_STORE_PROV_SYSTEM_W, 0, NULL, flags, L"ROOT");
     if (!system_store) { return; }
 
     PCCERT_CONTEXT cert_export = NULL;  // NOLINT(modernize-use-nullptr)
@@ -79,7 +79,8 @@ chatload::string chatload::os::getLogFolder() {
     PWSTR winres;  // NOLINT(cppcoreguidelines-init-variables): initialized below
     HRESULT hr = SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &winres);  // NOLINT(modernize-use-nullptr)
     if (!SUCCEEDED(hr)) {
-        throw std::system_error({ hr, std::system_category() }, "SHGetKnownFolderPath");
+        // NOLINTNEXTLINE(hicpp-signed-bitwise)
+        throw std::system_error({ HRESULT_CODE(hr), std::system_category() }, "SHGetKnownFolderPath");
     }
 
     std::wstring path = winres;
