@@ -121,6 +121,8 @@ chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv
     boost::optional<chatload::string> cache_file;
     po::options_description generic_options("Options also available in the config file");
     generic_options.add_options()
+        ("verbose,v", po::bool_switch(), "list read logs")
+        ("force,f", po::bool_switch(), "read all logs, even if they have been read before")
         ("insecure,k", po::bool_switch(), "allow TLS connections with invalid certificates")
         ("cafile", po::value(&ca_file), "PEM file with trusted CA certificate(s)")
         ("capath", po::value(&ca_path), "directory with trusted PEM CA certificate(s)")
@@ -134,8 +136,6 @@ chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv
     visible_options.add_options()
         ("help,h", po::bool_switch(), "display this help message and exit")
         ("version,V", po::bool_switch(), "display version information and exit")
-        ("verbose,v", po::bool_switch(), "list read logs")
-        ("force,f", po::bool_switch(), "read all logs, even if they have been read before")
         ("config,c", po_value_t<chatload::string>()->default_value(clcfg::CONFIG_FILE, clcfg::CONFIG_HELP), "config file");
 
     // Options parsed from the CLI (including positional ones)
