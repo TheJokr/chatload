@@ -24,9 +24,6 @@
 #define CHATLOAD_CONSTANTS_H
 
 
-// C headers
-#include <cstdint>
-
 // OpenSSL
 #include <openssl/tls1.h>
 
@@ -35,9 +32,6 @@
 
 namespace chatload {
 inline namespace constants {
-// Version information
-constexpr char VERSION[] = "2.0.0-dev";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
-
 // Config/CLI defaults
 constexpr chatload::char_t CONFIG_FILE[] = CHATLOAD_STRING("chatload.cfg");  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 constexpr char CONFIG_HELP[] = "chatload.cfg";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)

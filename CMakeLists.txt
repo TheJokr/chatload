@@ -15,6 +15,7 @@ if (MSVC)
     endforeach(lang)
 endif()
 
+
 # Boost
 set(Boost_USE_STATIC_LIBS ON)
 if (MSVC)
@@ -27,6 +28,7 @@ if (WIN32)
     set(OPENSSL_USE_STATIC_LIBS ON)
 endif()
 find_package(OpenSSL 1.1.0 REQUIRED)
+
 
 # readerwriterqueue
 add_library(readerwriterqueue INTERFACE)
@@ -42,6 +44,7 @@ target_include_directories(lz4 INTERFACE "ext/lz4/lib")
 add_library(xxhash INTERFACE)
 target_compile_definitions(xxhash INTERFACE "XXH_INLINE_ALL")
 target_include_directories(xxhash INTERFACE "ext/xxhash")
+
 
 # chatload
 add_executable(chatload "src/main.cpp" "src/cli.cpp" "src/reader.cpp" "src/os.cpp"
@@ -68,3 +71,18 @@ target_link_libraries(chatload PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(chatload PRIVATE readerwriterqueue)
 target_link_libraries(chatload PRIVATE lz4)
 target_link_libraries(chatload PRIVATE xxhash)
+
+
+# Custom target to generate chatload build information
+add_custom_target(
+    chatload-buildinfo "${CMAKE_COMMAND}" "-D" "SRC=${CMAKE_CURRENT_SOURCE_DIR}/src/buildinfo.hpp.in"
+      "-D" "DST=${CMAKE_CURRENT_SOURCE_DIR}/src/buildinfo.hpp"
+      "-D" "BUILD_VERSION=v${PROJECT_VERSION}"
+      "-D" "CACHE_FILE=${CMAKE_CURRENT_BINARY_DIR}/chatload-buildinfo.txt"
+      "-P" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/configure_buildinfo.cmake"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/buildinfo.hpp.in"
+    BYPRODUCTS "${CMAKE_CURRENT_SOURCE_DIR}/src/buildinfo.hpp"
+    COMMENT "Updating buildinfo.hpp"
+)
+add_dependencies(chatload chatload-buildinfo)

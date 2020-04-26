@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# Generated buildinfo header
+/src/buildinfo.hpp
+
 # Chatload
 /build
 /chatload.cfg

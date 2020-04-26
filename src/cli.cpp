@@ -43,6 +43,7 @@
 // chatload components
 #include "common.hpp"
 #include "constants.hpp"
+#include "buildinfo.hpp"
 
 
 namespace po = boost::program_options;
@@ -161,27 +162,39 @@ chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv
     po::notify(vm);
 
     bool ver = vm["version"].as<bool>(), help = vm["help"].as<bool>();
-    if (ver) {
-        chatload::cout << argv[0] << " version " << chatload::VERSION << "\n"
-                       << "Copyright (C) 2015-2019  Leo Bloecher\n"
-                       << "This program comes with ABSOLUTELY NO WARRANTY.\n"
-                       << "This is free software, and you are welcome to redistribute it under certain conditions."
-                       << std::endl;
+    if (ver || help) {
+        // Remove path to executable if present (compact output)
+        boost::basic_string_view<chatload::char_t> path(argv[0]);
+        const auto path_end = path.rfind(chatload::PATH_SEP);
+        if (path_end != boost::basic_string_view<chatload::char_t>::npos) {
+            path.remove_prefix(path_end + 1);
+        }
+
+        if (ver) {
+            // GIT_SHA1 may be empty (i.e., only contains \0), in which case it's not reported
+            chatload::cout << path << " " << chatload::VERSION << " built at " << chatload::BUILD_TIME << "\n";
+            if (chatload::GIT_SHA1[0]) { chatload::cout << "Git commit SHA1: " << chatload::GIT_SHA1 << "\n\n"; }
+
+            chatload::cout << "Copyright (C) 2015-2019  Leo Bloecher\n"
+                           << "This program comes with ABSOLUTELY NO WARRANTY.\n"
+                           << "This is free software, and you are welcome to redistribute it under certain conditions."
+                           << std::endl;
+        }
+
+        if (help) {
+            if (ver) { chatload::cout << "\n"; }
+
+            std::stringstream ss;
+            ss << visible_options;
+            std::string desc = ss.str();
+            desc.pop_back();
+
+            chatload::cout << "Usage: " << path << " [OPTION]... [path to EVE logs]\n\n"
+                           << desc.c_str() << std::endl;
+        }
+
+        std::exit(0);
     }
-
-    if (help) {
-        if (ver) { chatload::cout << "\n"; }
-
-        std::stringstream ss;
-        ss << visible_options;
-        std::string desc = ss.str();
-        desc.pop_back();
-
-        chatload::cout << "Usage: " << argv[0] << " [OPTION]... [path to EVE logs]\n\n"
-                       << desc.c_str() << std::endl;
-    }
-
-    if (ver || help) { std::exit(0); }
 
     return { vm["verbose"].as<bool>(), !vm["force"].as<bool>(), vm["insecure"].as<bool>(),
              std::move(ca_file), std::move(ca_path), std::move(cipher_list), std::move(ciphersuites),
