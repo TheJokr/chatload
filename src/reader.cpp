@@ -101,7 +101,10 @@ chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::opti
     // Empty string signalizes end of files
     queue.enqueue(std::u16string());
 
-    if (cache_file) { chatload::file_cache::save_to_file(cache, cache_file.get()); }
+    if (cache_file) {
+        chatload::os::createPath(cache_file.get());
+        chatload::file_cache::save_to_file(cache, cache_file.get());
+    }
     res.duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start_time);
     return res;
 }

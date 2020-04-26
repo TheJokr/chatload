@@ -24,6 +24,9 @@
 // Forward declaration
 #include "os.hpp"
 
+// C headers
+#include <cerrno>
+
 // Containers
 #include <string>
 
@@ -47,6 +50,28 @@
 
 // chatload components
 #include "common.hpp"
+
+
+bool chatload::os::internal::is_path_absolute(const chatload::string& path) noexcept {
+    // Absolute paths start with X:\, where X is any single drive letter
+    return path.length() >= 3 && path[1] == L':' && path[2] == chatload::PATH_SEP;
+}
+
+// Windows version ignores mode parameter
+std::error_code chatload::os::internal::mkdir(const chatload::char_t* path, unsigned short) noexcept {
+    if (CreateDirectoryW(path, NULL) == 0) {  // NOLINT(modernize-use-nullptr)
+        DWORD ec = GetLastError();
+        switch (ec) {
+            case ERROR_ALREADY_EXISTS:
+                return { EEXIST, std::generic_category() };
+            case ERROR_PATH_NOT_FOUND:
+                return { ENOENT, std::generic_category() };
+            default:
+                return { static_cast<int>(ec), std::system_category() };
+        }
+    }
+    return {};
+}
 
 
 void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {

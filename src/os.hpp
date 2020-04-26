@@ -27,6 +27,9 @@
 // C headers
 #include <cstdint>
 
+// Exceptions
+#include <system_error>
+
 // Utility
 #include <memory>
 #include <iterator>
@@ -43,9 +46,15 @@
 
 namespace chatload {
 namespace os {
+namespace internal {
+bool is_path_absolute(const chatload::string& path) noexcept;
+std::error_code mkdir(const chatload::char_t* path, unsigned short mode) noexcept;
+}  // namespace internal
+
 void loadTrustedCerts(SSL_CTX* ctx) noexcept;
 chatload::string getLogFolder();
 boost::optional<chatload::string> getCacheFile();
+std::error_code createPath(const chatload::string& path);
 
 struct dir_entry {
     chatload::string name;
