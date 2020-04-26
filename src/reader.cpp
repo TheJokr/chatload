@@ -84,7 +84,7 @@ chatload::reader::read_stat chatload::reader::readLogs(const chatload::cli::opti
     log_folder.append(1, chatload::PATH_SEP);
     const auto base_end = log_folder.length();
     for (const chatload::os::dir_entry& file : log_dir) {
-        if (cache[file.name] >= file.write_time || !std::regex_match(file.name, pattern)) { continue; }
+        if (cache[file.name] >= file.write_time || !std::regex_search(file.name, pattern)) { continue; }
         log_folder.replace(base_end, chatload::string::npos, file.name);
 
         // If readUTF16LE returns true, buf.empty() always returns false
