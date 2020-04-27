@@ -1,5 +1,6 @@
 # CMake 3.8 added cxx_std_* features
-cmake_minimum_required(VERSION 3.8)
+# CMake 3.9 added CheckIPOSupported
+cmake_minimum_required(VERSION 3.9)
 
 project(chatload-client VERSION 2.0.0 LANGUAGES C CXX)
 # Disable C++ vendor extensions by default
@@ -13,6 +14,14 @@ if (MSVC)
             string(REPLACE "/MD" "/MT" CMAKE_${lang}_FLAGS_${config} "${CMAKE_${lang}_FLAGS_${config}}")
         endforeach(config)
     endforeach(lang)
+endif()
+
+# Check IPO support for non-DEBUG builds
+if (CMAKE_BUILD_TYPE STREQUAL DEBUG)
+    set(CHATLOAD_USE_IPO OFF)
+else()
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT CHATLOAD_USE_IPO LANGUAGES CXX)
 endif()
 
 
@@ -60,6 +69,7 @@ elseif (APPLE)
 endif()
 
 target_compile_features(chatload PRIVATE cxx_std_14)
+set_target_properties(chatload PROPERTIES INTERPROCEDURAL_OPTIMIZATION "${CHATLOAD_USE_IPO}")
 if (MSVC)
     target_compile_options(chatload PRIVATE "/W4" "/WX" "/utf-8" "/permissive-")
 elseif (UNIX)
