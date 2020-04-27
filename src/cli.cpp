@@ -172,7 +172,8 @@ chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv
 
         if (ver) {
             // GIT_SHA1 may be empty (i.e., only contains \0), in which case it's not reported
-            chatload::cout << path << " " << chatload::VERSION << " built at " << chatload::BUILD_TIME << "\n";
+            chatload::cout << path << " " << chatload::VERSION << " built at " << chatload::BUILD_TIME
+                           << " for " << chatload::REPO_SLUG << "\n";
             if (chatload::GIT_SHA1[0]) { chatload::cout << "Git commit SHA1: " << chatload::GIT_SHA1 << "\n\n"; }
 
             chatload::cout << "Copyright (C) 2015-2019  Leo Bloecher\n"

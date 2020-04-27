@@ -15,7 +15,7 @@ cmake -G Ninja -B build || exit /b 1
 cmake --build build -j 2 || exit /b 1
 .\build\chatload -hV || exit /b 1
 
-clang-tidy src\cli.cpp src\cli.hpp src\common.hpp src\compressor.hpp src\constants.hpp ^
+clang-tidy src\buildinfo.hpp src\cli.cpp src\cli.hpp src\common.hpp src\compressor.hpp src\constants.hpp ^
            src\consumer.cpp src\consumer.hpp src\deref_proxy.hpp src\exception.hpp src\filecache.cpp ^
            src\filecache.hpp src\format.hpp src\main.cpp src\network.cpp  src\network.hpp src\os.cpp ^
            src\os.hpp src\os_win32.cpp src\reader.cpp src\reader.hpp src\stringcache.hpp ^

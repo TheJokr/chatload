@@ -27,10 +27,17 @@ else()
     endif()
 endif()
 
+# Get REPO_SLUG from CI variables or use fallback
+if (DEFINED ENV{TRAVIS_REPO_SLUG})
+    set(REPO_SLUG "$ENV{TRAVIS_REPO_SLUG}")
+else()
+    set(REPO_SLUG "TheJokr/chatload")
+endif()
+
 # Check values against cache to avoid rebuilds due to new timestamp
 # NOTE: this means timestamp won't change unless changes are commited!
 if (DEFINED CACHE_FILE)
-    set(CACHE_VALUE "${BUILD_VERSION}\n${GIT_SHA1}\n")
+    set(CACHE_VALUE "${BUILD_VERSION}\n${REPO_SLUG}\n${GIT_SHA1}\n")
 
     # Return early if output exists and cache is up-to-date
     if (EXISTS "${DST}" AND EXISTS "${CACHE_FILE}")
