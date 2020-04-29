@@ -60,12 +60,6 @@
 #include "common.hpp"
 
 
-bool chatload::os::internal::is_path_absolute(const chatload::string& path) noexcept {
-    // Absolute paths start with /
-    // Not UB! (see std::basic_string::operator[])
-    return path[0] == chatload::PATH_SEP;
-}
-
 std::error_code chatload::os::internal::mkdir(const chatload::char_t* path, unsigned short mode) noexcept {
     if (::mkdir(path, mode) != 0) {
         return { errno, std::system_category() };

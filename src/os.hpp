@@ -47,8 +47,17 @@
 namespace chatload {
 namespace os {
 namespace internal {
-bool is_path_absolute(const chatload::string& path) noexcept;
 std::error_code mkdir(const chatload::char_t* path, unsigned short mode) noexcept;
+inline bool is_path_absolute(const chatload::string& path) noexcept {
+#ifdef CHATLOAD_WIN32
+    // Absolute paths start with X:\, where X is any single drive letter
+    return path.length() >= 3 && path[1] == L':' && path[2] == chatload::PATH_SEP;
+#else  // !CHATLOAD_WIN32
+    // Absolute paths start with /
+    // Not UB! (see std::basic_string::operator[])
+    return path[0] == chatload::PATH_SEP;
+#endif  // CHATLOAD_WIN32
+}
 }  // namespace internal
 
 void loadTrustedCerts(SSL_CTX* ctx) noexcept;

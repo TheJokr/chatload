@@ -32,6 +32,7 @@
 
 namespace chatload {
 #ifdef _WIN32
+#define CHATLOAD_WIN32
 using char_t = wchar_t;
 #define CHATLOAD_STRING(str) L##str
 static auto& cout = ::std::wcout;  // NOLINT(clang-diagnostic-unused-variable)
