@@ -150,7 +150,7 @@ struct clients_context {
         std::for_each(this->writers.begin(), this->writers.end(), std::forward<T>(func));
     }
 
-    bool all_down() {
+    bool all_down() noexcept {
         return std::all_of(this->writers.begin(), this->writers.end(),
                            [](const tcp_writer& writer) { return static_cast<bool>(writer.get_error()); });
     }
