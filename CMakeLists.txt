@@ -54,6 +54,9 @@ add_library(xxhash INTERFACE)
 target_compile_definitions(xxhash INTERFACE "XXH_INLINE_ALL")
 target_include_directories(xxhash INTERFACE "ext/xxhash")
 
+# robin-hood-hashing
+add_subdirectory("ext/robin-hood-hashing" EXCLUDE_FROM_ALL)
+
 
 # chatload
 add_executable(chatload "src/main.cpp" "src/cli.cpp" "src/reader.cpp" "src/os.cpp"
@@ -81,6 +84,7 @@ target_link_libraries(chatload PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(chatload PRIVATE readerwriterqueue)
 target_link_libraries(chatload PRIVATE lz4)
 target_link_libraries(chatload PRIVATE xxhash)
+target_link_libraries(chatload PRIVATE robin_hood)
 
 
 # Custom target to generate chatload build information
