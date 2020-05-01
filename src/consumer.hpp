@@ -47,7 +47,7 @@
 
 // chatload components
 #include "cli.hpp"
-#include "stringcache.hpp"
+#include "logparser.hpp"
 #include "compressor.hpp"
 #include "network.hpp"
 
@@ -69,7 +69,7 @@ public:
                 std::system_error
         >;
 
-        std::uint_least64_t names_processed = 0;
+        std::uint_least64_t reports_processed = 0;
         std::uint_least64_t size_compressed = 0;
         std::chrono::seconds duration;
         error_variant error;
@@ -78,9 +78,8 @@ public:
     static consume_stat consumeLogs(const chatload::cli::options& args, queue_t& queue);
 
 private:
-    // Deduplication cache (18 bits index, default 32 bits values -> 1 MiB cache)
-    static constexpr std::size_t CACHE_INDEX_BITS = 18;
-    chatload::string_cache<CACHE_INDEX_BITS> cache;
+    // Log parser
+    chatload::logparser log_parser;
 
     // LZ4 compression
     boost::optional<boost::asio::const_buffer> next_comp_buf;
@@ -88,9 +87,6 @@ private:
 
     // Socket connections
     chatload::network::clients_context ctx;
-
-    // Average name length is ~12 characters (+1 for newline), roughly 20 names per file
-    static constexpr std::size_t AVG_BUF_SIZE = 20 * ((12 + 1) * sizeof(std::u16string::value_type));
 
     // Batch process 10 files before polling the IO loop
     static constexpr std::size_t FILES_PER_IO_POLL = 10;

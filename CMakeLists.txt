@@ -60,7 +60,7 @@ add_subdirectory("ext/robin-hood-hashing" EXCLUDE_FROM_ALL)
 
 # chatload
 add_executable(chatload "src/main.cpp" "src/cli.cpp" "src/reader.cpp" "src/os.cpp"
-                   "src/filecache.cpp" "src/consumer.cpp" "src/network.cpp")
+                   "src/filecache.cpp" "src/consumer.cpp" "src/network.cpp" "src/logparser.cpp")
 if (WIN32)
     target_sources(chatload PRIVATE "src/os_win32.cpp")
     target_compile_definitions(chatload PRIVATE "NTDDI_VERSION=NTDDI_WIN7" "_WIN32_WINNT=_WIN32_WINNT_WIN7"

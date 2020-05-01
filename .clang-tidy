@@ -25,9 +25,9 @@ CheckOptions:
 - key: "cppcoreguidelines-macro-usage.AllowedRegexp"
   value: '^DEBUG_*|^CHATLOAD_STRING$'
 - key: "readability-magic-numbers.IgnoredIntegerValues"
-  value: '1;2;3;4;8;16;32;60;64;1000;'
+  value: '1;2;3;4;8;10;16;32;60;64;1000;'
 - key: "cppcoreguidelines-avoid-magic-numbers.IgnoredIntegerValues"
-  value: '1;2;3;4;8;16;32;60;64;1000;'
+  value: '1;2;3;4;8;10;16;32;60;64;1000;'
 - key: "performance-move-const-arg.CheckTriviallyCopyableMove"
   value: '0'
 - key: "bugprone-suspicious-enum-usage.StrictMode"

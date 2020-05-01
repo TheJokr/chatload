@@ -26,6 +26,7 @@
 
 // C headers
 #include <cstdint>
+#include <ctime>
 
 // Exceptions
 #include <system_error>
@@ -59,6 +60,14 @@ inline bool is_path_absolute(const chatload::string& path) noexcept {
 #endif  // CHATLOAD_WIN32
 }
 }  // namespace internal
+
+inline std::time_t timegm(std::tm* time) noexcept {
+#ifdef CHATLOAD_WIN32
+    return ::_mkgmtime(time);
+#else  // !CHATLOAD_WIN32
+    return ::timegm(time);
+#endif  // CHATLOAD_WIN32
+}
 
 void loadTrustedCerts(SSL_CTX* ctx) noexcept;
 chatload::string getLogFolder();

@@ -99,9 +99,9 @@ struct consumer_error_visitor {
         std::string dur = chatload::format::format_duration(this->consume_res.duration);
         if (err_hosts < host_status.size()) {
             std::string bytes_sent = chatload::format::format_size(this->consume_res.size_compressed);
-            chatload::cout << "Uploaded " << this->consume_res.names_processed << " character names ("
+            chatload::cout << "Uploaded " << this->consume_res.reports_processed << " character reports ("
                            << bytes_sent.c_str() << ") successfully to " << (host_status.size() - err_hosts)
-                           << " remote hosts within " << dur.c_str() << std::endl;
+                           << " remote host(s) within " << dur.c_str() << std::endl;
         } else {
             chatload::cout << "All " << host_status.size() << " uploads failed within " << dur.c_str() << std::endl;
         }

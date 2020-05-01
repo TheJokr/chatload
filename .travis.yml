@@ -27,8 +27,8 @@ jobs:
         - cmake --build build -j 2 && ./build/chatload -hV
         - >-
           $(brew --prefix llvm)/bin/clang-tidy -p build src/buildinfo.hpp src/cli.* src/common.hpp src/compressor.hpp
-          src/constants.hpp src/consumer.* src/deref_proxy.hpp src/exception.hpp src/filecache.*
-          src/format.hpp src/main.cpp src/network.* src/os.* src/os_darwin.cpp src/reader.* src/stringcache.hpp
+          src/constants.hpp src/consumer.* src/deref_proxy.hpp src/exception.hpp src/filecache.* src/format.hpp
+          src/logparser.* src/main.cpp src/network.* src/os.* src/os_darwin.cpp src/reader.* src/stringcache.hpp
 
 addons:
   homebrew:

@@ -36,8 +36,6 @@
 
 // Boost
 #include <boost/system/system_error.hpp>
-#include <boost/optional.hpp>
-#include <boost/utility/string_view.hpp>
 #include <boost/asio/io_context.hpp>
 
 // LZ4 compression
@@ -45,8 +43,6 @@
 
 // chatload components
 #include "cli.hpp"
-#include "format.hpp"
-#include "compressor.hpp"
 #include "network.hpp"
 
 
@@ -57,11 +53,6 @@ constexpr LZ4F_preferences_t chatload_lz4f_preferences() noexcept {
     prefs.frameInfo.blockMode = LZ4F_blockLinked;
     prefs.frameInfo.contentChecksumFlag = LZ4F_contentChecksumEnabled;
     return prefs;
-}
-
-constexpr boost::u16string_view extract_name_sv(const std::u16string& file, std::u16string::size_type header_beg) {
-    // std::u16string::find guarantees that this is valid
-    return { file.data() + header_beg, file.length() - header_beg };
 }
 
 std::system_error to_std_error(const boost::system::system_error& error) {
@@ -132,11 +123,8 @@ void chatload::consumer::run(queue_t& queue, bool& reader_finished, consume_stat
     io_ctx.run();
     io_ctx.restart();
 
-    std::u16string file;
-    chatload::streaming_optional_lz4_compressor::buffer_t file_buf;
-    file_buf.reserve(AVG_BUF_SIZE);
-
     // Extract character names
+    std::u16string file;
     for (std::size_t iteration = 0;; ++iteration) {
         while (!queue.try_dequeue(file)) {}
         if (file.empty()) {
@@ -144,31 +132,12 @@ void chatload::consumer::run(queue_t& queue, bool& reader_finished, consume_stat
             break;
         }
 
-        std::u16string::size_type beg, last = 0;  // NOLINT(cppcoreguidelines-init-variables): initialized below
-        while ((beg = file.find('[', last)) != std::u16string::npos) {
-            last = beg + 1;
-            boost::optional<boost::u16string_view> char_name = chatload::format::extract_name(extract_name_sv(file, beg));
-            if (!char_name) { continue; }
-
-            auto& name = char_name.get();
-            if (!this->cache.add_if_absent(name)) { continue; }
-            ++res.names_processed;
-
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): cast to bytes
-            const auto* name_ptr = reinterpret_cast<const unsigned char*>(name.data());
-            const auto name_len = sizeof(boost::u16string_view::value_type) * name.size();
-
-            // Insert UTF-16LE newline (0x0A00) after name
-            file_buf.insert(file_buf.cend(), name_ptr, name_ptr + name_len);
-            file_buf.push_back('\n');
-            file_buf.push_back(0);
-        }
+        chatload::logparser::parser_res parsed = this->log_parser(file);
+        res.reports_processed += parsed.report_count;
 
         bool run_io_poll = iteration % FILES_PER_IO_POLL == 0;
-        if (!file_buf.empty()) {
-            this->next_comp_buf = this->compressor.push_chunk(std::move(file_buf));
-            file_buf.clear();
-
+        if (!parsed.buffer.empty()) {
+            this->next_comp_buf = this->compressor.push_chunk(std::move(parsed.buffer));
             if (this->next_comp_buf) {
                 res.size_compressed += this->next_comp_buf.get().size();
                 this->ctx.for_each(push_next_comp_buf);

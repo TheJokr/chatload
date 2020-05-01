@@ -25,9 +25,7 @@
 
 
 // C headers
-#include <cstdlib>
 #include <cstdint>
-#include <cctype>
 
 // Streams
 #include <sstream>
@@ -38,10 +36,6 @@
 
 // Utility
 #include <chrono>
-
-// Boost
-#include <boost/optional.hpp>
-#include <boost/utility/string_view.hpp>
 
 namespace chatload {
 namespace format {
@@ -90,36 +84,6 @@ inline std::string format_duration(const std::chrono::duration<Rep, Period>& dur
     if (mins) { oss << mins << 'm'; }
     if (secs || (!hours && !mins)) { oss << secs << 's'; }
     return oss.str();
-}
-
-inline boost::optional<boost::u16string_view> extract_name(boost::u16string_view line) {
-    // Format: [ YYYY.MM.DD HH:mm:ss ] CHARACTER NAME > TEXT
-    // Some lines may be damaged due to missing synchronization on CCP's part
-    // See https://community.eveonline.com/support/policies/naming-policy-en/
-    constexpr boost::u16string_view::size_type header_len = 24;
-
-    if (line.size() <= header_len || line[header_len - 2] != ']') {
-        // Invalid match
-        return boost::none;
-    }
-
-    line.remove_prefix(header_len);
-    boost::u16string_view::size_type name_len = 0;
-
-    unsigned char num_space = 0;
-    const auto line_len = line.size();
-    for (; name_len < line_len; ++name_len) {
-        char16_t cur = line[name_len];
-        if (!isalnum(cur) && cur != '-' && cur != '\'') {
-            if (cur == ' ' && num_space < 2 && name_len + 1 < line_len && line[name_len + 1] != '>') {
-                ++num_space;
-            } else {
-                break;
-            }
-        }
-    }
-
-    return line.substr(0, name_len);
 }
 }  // namespace format
 }  // namespace chatload
