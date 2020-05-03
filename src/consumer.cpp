@@ -54,10 +54,6 @@ constexpr LZ4F_preferences_t chatload_lz4f_preferences() noexcept {
     prefs.frameInfo.contentChecksumFlag = LZ4F_contentChecksumEnabled;
     return prefs;
 }
-
-std::system_error to_std_error(const boost::system::system_error& error) {
-    return { error.code(), error.std::runtime_error::what() };
-}
 }  // Anonymous namespace
 
 
@@ -82,13 +78,13 @@ chatload::consumer::consume_stat chatload::consumer::consumeLogs(const chatload:
         std::vector<host_status>& host_stat = boost::variant2::get<0>(res.error);
         host_stat.reserve(instance.ctx.writers.size());
         instance.ctx.for_each([&host_stat](chatload::network::tcp_writer& writer) {
-            host_stat.push_back({ writer.get_host(), writer.get_error().map(to_std_error) });
+            host_stat.push_back({ writer.get_host(), writer.retrieve_error() });
         });
     } catch (const boost::system::system_error& ex) {
-        // From chatload::network::clients_context constructor
-        res.error = to_std_error(ex);
+        // From Boost (Asio) functions
+        res.error = std::system_error(ex.code(), ex.std::runtime_error::what());
     } catch (const std::system_error& ex) {
-        // From chatload::streaming_optional_lz4_compressor
+        // From chatload functions
         res.error = ex;
     }
 

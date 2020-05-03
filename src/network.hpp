@@ -27,14 +27,17 @@
 // Containers
 #include <vector>
 
+// Exceptions
+#include <system_error>
+
 // Utility
 #include <utility>
+#include <functional>
 #include <algorithm>
 
 // Boost
 #include <boost/optional.hpp>
 #include <boost/system/error_code.hpp>
-#include <boost/system/system_error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/buffer.hpp>
@@ -63,7 +66,7 @@ private:
     bool shutdown_queued = false;
 
     const chatload::cli::host& host;
-    boost::optional<boost::system::system_error> net_err;
+    boost::optional<std::system_error> net_err;
 
     // Holds asio::const_buffers for all queued chunks
     std::vector<boost::asio::const_buffer> buffers;
@@ -73,7 +76,12 @@ public:
                         boost::asio::ssl::context& ssl_ctx, boost::asio::ip::tcp::resolver& tcp_resolver);
 
     const auto& get_host() const noexcept { return this->host; }
-    const auto& get_error() const noexcept { return this->net_err; }
+    bool has_error() const noexcept { return this->net_err.has_value(); }
+    auto retrieve_error() {
+        boost::optional<std::system_error> res = std::move(this->net_err);
+        this->net_err.reset();
+        return res;
+    }
 
     void schedule() {
         if (this->write_queued || this->net_err) { return; }
@@ -113,16 +121,16 @@ struct clients_context {
         SSL_CTX* ssl_ctx_native = this->ssl_ctx.native_handle();
 
         if (SSL_CTX_set_min_proto_version(ssl_ctx_native, chatload::OPENSSL_MIN_PROTO_VERSION) != 1) {
-            throw boost::system::system_error(get_openssl_error(), "set_min_proto_version");
+            throw std::system_error(get_openssl_error(), "set_min_proto_version");
         }
 
         const char* cipher_list = args.cipher_list ? args.cipher_list.get().c_str() : chatload::OPENSSL_DEFAULT_CIPHER_LIST;
         if (SSL_CTX_set_cipher_list(ssl_ctx_native, cipher_list) != 1) {
-            throw boost::system::system_error(get_openssl_error(), "set_cipher_list");
+            throw std::system_error(get_openssl_error(), "set_cipher_list");
         }
 
         if (args.ciphersuites && SSL_CTX_set_ciphersuites(ssl_ctx_native, args.ciphersuites.get().c_str()) != 1) {
-            throw boost::system::system_error(get_openssl_error(), "set_ciphersuites");
+            throw std::system_error(get_openssl_error(), "set_ciphersuites");
         }
 
         // Only load certificates if verification is enabled for some host(s)
@@ -133,7 +141,7 @@ struct clients_context {
                 const char* CAfile = args.ca_file ? args.ca_file.get().c_str() : nullptr;
                 const char* CApath = args.ca_path ? args.ca_path.get().c_str() : nullptr;
                 if (SSL_CTX_load_verify_locations(ssl_ctx_native, CAfile, CApath) != 1) {
-                    throw boost::system::system_error(get_openssl_error(), "load_verify_locations");
+                    throw std::system_error(get_openssl_error(), "load_verify_locations");
                 }
             }
             chatload::os::loadTrustedCerts(ssl_ctx_native);
@@ -151,12 +159,11 @@ struct clients_context {
     }
 
     bool all_down() noexcept {
-        return std::all_of(this->writers.begin(), this->writers.end(),
-                           [](const tcp_writer& writer) { return static_cast<bool>(writer.get_error()); });
+        return std::all_of(this->writers.begin(), this->writers.end(), std::mem_fn(&tcp_writer::has_error));
     }
 
 private:
-    static boost::system::error_code get_openssl_error() noexcept {
+    static std::error_code get_openssl_error() {
         return { static_cast<int>(ERR_get_error()), boost::asio::error::get_ssl_category() };
     }
 };
