@@ -42,32 +42,10 @@
 // LZ4 compression
 #include <lz4frame.h>
 
+// chatload components
+#include "error.hpp"
+
 namespace chatload {
-// LZ4F system_error integration
-class LZ4F_error_category : public std::error_category {
-public:
-    const char* name() const noexcept override { return "LZ4F"; }
-
-    std::string message(int code) const override {
-        // Translate code back into LZ4 format before looking up message
-        auto lz4f_code = static_cast<LZ4F_errorCode_t>(-static_cast<std::ptrdiff_t>(code));
-        const char* res = LZ4F_getErrorName(lz4f_code);
-
-        return res ? res : "Unknown LZ4F error";
-    }
-};
-
-inline std::error_code make_error_code(LZ4F_errorCode_t code) noexcept {
-    static LZ4F_error_category instance;
-    static_assert(sizeof(std::ptrdiff_t) >= sizeof(LZ4F_errorCode_t),
-                  "std::ptrdiff_t is not large enough to convert LZ4F_errorCode_t into int");
-
-    // LZ4 returns errors as the highest possible size values (-1, -2, ...).
-    // Convert those into regular integers for storage in std::error_code.
-    int error_code = LZ4F_isError(code) ? static_cast<int>(-static_cast<std::ptrdiff_t>(code)) : 0;
-    return { error_code, instance };
-}
-
 class streaming_optional_lz4_compressor {
 public:
     using buffer_t = std::vector<unsigned char>;
@@ -138,7 +116,7 @@ public:
         std::size_t comp_written = LZ4F_compressUpdate(this->ctx.get(), buf.data(), buf_cap,
                                                        chunk.data(), chunk.size(), nullptr);
         if (LZ4F_isError(comp_written)) {
-            throw std::system_error(make_error_code(comp_written), "LZ4F_compressUpdate");
+            throw std::system_error(LZ4F_getErrorCode(comp_written), "LZ4F_compressUpdate");
         } else if (comp_written > 0) {
             return this->flush_comp_buffer(comp_written);
         } else {
@@ -155,7 +133,7 @@ public:
 
         std::size_t comp_written = LZ4F_compressEnd(this->ctx.get(), buf.data(), buf_cap, nullptr);
         if (LZ4F_isError(comp_written)) {
-            throw std::system_error(make_error_code(comp_written), "LZ4F_compressEnd");
+            throw std::system_error(LZ4F_getErrorCode(comp_written), "LZ4F_compressEnd");
         } else if (comp_written > 0) {
             return this->flush_comp_buffer(comp_written);
         } else {

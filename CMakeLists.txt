@@ -47,6 +47,7 @@ target_include_directories(readerwriterqueue INTERFACE "ext/readerwriterqueue")
 add_library(lz4 STATIC EXCLUDE_FROM_ALL "ext/lz4/lib/lz4.c" "ext/lz4/lib/lz4hc.c"
                 "ext/lz4/lib/lz4frame.c" "ext/lz4/lib/xxhash.c")
 target_compile_definitions(lz4 PRIVATE "XXH_NAMESPACE=LZ4_")
+target_compile_definitions(lz4 INTERFACE "LZ4F_STATIC_LINKING_ONLY")
 target_include_directories(lz4 INTERFACE "ext/lz4/lib")
 
 # xxHash (inlined)
