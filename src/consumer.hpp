@@ -89,6 +89,7 @@ private:
     chatload::network::clients_context ctx;
 
     // Batch process 10 files before polling the IO loop
+    // (unless there is a new compressed buffer)
     static constexpr std::size_t FILES_PER_IO_POLL = 10;
 
     // Check for errors on all writers every 5th IO loop poll

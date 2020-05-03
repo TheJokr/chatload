@@ -62,14 +62,19 @@ class tcp_writer {
 private:
     boost::asio::io_context& io_ctx;
     boost::beast::ssl_stream<boost::asio::ip::tcp::socket> ssl_sock;
-    bool write_queued = true;
-    bool shutdown_queued = false;
 
     const chatload::cli::host& host;
     boost::optional<std::system_error> net_err;
 
-    // Holds asio::const_buffers for all queued chunks
+    // Holds asio::const_buffers for all queued chunks (non-owning!)
     std::vector<boost::asio::const_buffer> buffers;
+
+    // Holds commands read from the server. Currently, anything
+    // received after the protocol version exchange is ignored.
+    chatload::protocol::command server_buf = chatload::protocol::command::NONE;
+
+    bool write_queued = true;
+    enum : unsigned char { SHUTDOWN_READY, SHUTDOWN_REQUESTED, SHUTDOWN_IN_PROGRESS } shutdown_status = SHUTDOWN_READY;
 
 public:
     explicit tcp_writer(const chatload::cli::host& host, boost::asio::io_context& io_ctx,
@@ -82,6 +87,10 @@ public:
         this->net_err.reset();
         return res;
     }
+
+    // MUST be called after the first invocation of io_ctx.run() finished.
+    // This restarts the bits of tcp_writer that would make that first call block forever.
+    void start_after_init();
 
     void schedule() {
         if (this->write_queued || this->net_err) { return; }
@@ -97,17 +106,21 @@ public:
     }
 
     void shutdown() {
-        if (this->net_err) { return; }
-        this->shutdown_queued = true;
+        if (this->shutdown_status != SHUTDOWN_READY || this->net_err) { return; }
+        this->shutdown_status = SHUTDOWN_REQUESTED;
         this->schedule();
     }
 
 private:
     void resolve_hdlr(const boost::system::error_code& ec, boost::asio::ip::tcp::resolver::results_type results);
-    void connect_hdlr(const boost::system::error_code& ec, const boost::asio::ip::tcp::endpoint& endpoint);
+    void connect_hdlr(const boost::system::error_code& ec, const boost::asio::ip::tcp::endpoint&);
     void ssl_handshake_hdlr(const boost::system::error_code& ec);
-    void write_hdlr(const boost::system::error_code& ec, std::size_t bytes_transferred);
+    void version_exchange_hdlr(const boost::system::error_code& ec, std::size_t);
+    void read_hdlr(const boost::system::error_code& ec, std::size_t);
+    void write_hdlr(const boost::system::error_code& ec, std::size_t);
     void ssl_shutdown_hdlr(const boost::system::error_code& ec);
+
+    void shutdown_immediate();
 };
 
 struct clients_context {

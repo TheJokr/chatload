@@ -114,7 +114,8 @@ boost::optional<std::tm> parse_log_timestamp(boost::u16string_view timestamp) no
 // Helpers to write binary representations to output buffer
 template<typename T>
 std::pair<const unsigned char*, const unsigned char*> get_byte_range(const T* ptr) noexcept {
-    static_assert(std::is_arithmetic<T>::value || std::is_class<T>::value, "T must be arithmetic or class type");
+    static_assert(std::is_trivially_copyable<T>::value && !std::is_array<T>::value,
+                  "T must be a trivially-copyable non-array type");
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): cast to bytes
     const auto* byte_ptr = reinterpret_cast<const unsigned char*>(ptr);

@@ -24,6 +24,9 @@
 #define CHATLOAD_CONSTANTS_H
 
 
+// C headers
+#include <cstdint>
+
 // OpenSSL
 #include <openssl/tls1.h>
 
@@ -35,6 +38,19 @@ inline namespace constants {
 // Config/CLI defaults
 constexpr chatload::char_t CONFIG_FILE[] = CHATLOAD_STRING("chatload.cfg");  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 constexpr char CONFIG_HELP[] = "chatload.cfg";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
+
+// Chatload protocol
+namespace protocol {
+// Version numbering to support future protocol evolution
+constexpr std::uint32_t VERSION = 1;
+
+// Commands sent by the server
+enum class command : std::uint32_t {
+    NONE = 0,  // for default initialization
+    VERSION_OK = 1,
+    VERSION_NOT_SUPPORTED = 2
+};
+}  // namespace protocol
 
 // Network defaults
 constexpr char DEFAULT_HOST[] = "chatload.bloecher.dev";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)

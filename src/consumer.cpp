@@ -118,6 +118,7 @@ void chatload::consumer::run(queue_t& queue, bool& reader_finished, consume_stat
     }
     io_ctx.run();
     io_ctx.restart();
+    this->ctx.for_each(std::mem_fn(&chatload::network::tcp_writer::start_after_init));
 
     // Extract character names
     std::u16string file;
