@@ -1,9 +1,9 @@
 ---
 FormatStyle: file
 HeaderFilterRegex: 'src[/\\].+\.hpp$'
-Checks: 'boost-*,bugprone-*,cert-*,clang-*,cppcoreguidelines-*,google-*,misc-*,
-         modernize-*,performance-*,readability-*,fuchsia-trailing-return,hicpp-exception-baseclass,
-         hicpp-multiway-paths-covered,hicpp-signed-bitwise,llvm-namespace-comment,
+Checks: 'boost-*,bugprone-*,cert-*,clang-*,cppcoreguidelines-*,google-*,misc-*,modernize-*,
+         performance-*,readability-*,fuchsia-trailing-return,hicpp-exception-baseclass,
+         hicpp-multiway-paths-covered,llvm-namespace-comment,
          -cert-dcl16-c,-cert-err60-cpp,-cert-dcl21-cpp,-cppcoreguidelines-owning-memory,
          -cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-bounds-pointer-arithmetic,
          -google-objc-*,-google-readability-todo,-google-runtime-int,-google-runtime-references,-misc-no-recursion,

@@ -75,7 +75,6 @@ void chatload::os::loadTrustedCerts(SSL_CTX* ctx) noexcept {
     X509_STORE* verify_store = SSL_CTX_get_cert_store(ctx);
     if (!verify_store) { return; }
 
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     constexpr DWORD flags = CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG | CERT_SYSTEM_STORE_CURRENT_USER;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
     HCERTSTORE system_store = CertOpenStore(CERT_STORE_PROV_SYSTEM_W, 0, NULL, flags, L"ROOT");
@@ -99,7 +98,6 @@ chatload::string chatload::os::getLogFolder() {
     PWSTR winres;  // NOLINT(cppcoreguidelines-init-variables): initialized below
     HRESULT hr = SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &winres);  // NOLINT(modernize-use-nullptr)
     if (!SUCCEEDED(hr)) {
-        // NOLINTNEXTLINE(hicpp-signed-bitwise)
         throw std::system_error({ HRESULT_CODE(hr), std::system_category() }, "SHGetKnownFolderPath");
     }
 
@@ -125,9 +123,7 @@ boost::optional<chatload::string> chatload::os::getCacheFile() {
 
 namespace {
 chatload::os::dir_entry dir_entry_from_find_data(const WIN32_FIND_DATAW& data) {
-    // NOLINTNEXTLINE(hicpp-signed-bitwise): false positive
     return { data.cFileName, (static_cast<DWORDLONG>(data.nFileSizeHigh) << 32) | data.nFileSizeLow,
-             // NOLINTNEXTLINE(hicpp-signed-bitwise): false positive
              (static_cast<DWORDLONG>(data.ftLastWriteTime.dwHighDateTime) << 32) | data.ftLastWriteTime.dwLowDateTime };
 }
 }  // Anonymous namespace
@@ -153,9 +149,9 @@ chatload::os::dir_handle::dir_handle(const chatload::string& dir, bool enable_di
         throw std::system_error({ static_cast<int>(GetLastError()), std::system_category() }, "FindFirstFileEx");
     }
 
-    if (!enable_dirs) { this->state->file_attrs |= FILE_ATTRIBUTE_DIRECTORY; }  // NOLINT(hicpp-signed-bitwise)
-    if (!enable_hidden) { this->state->file_attrs |= FILE_ATTRIBUTE_HIDDEN; }  // NOLINT(hicpp-signed-bitwise)
-    if (!enable_system) { this->state->file_attrs |= FILE_ATTRIBUTE_SYSTEM; }  // NOLINT(hicpp-signed-bitwise)
+    if (!enable_dirs) { this->state->file_attrs |= FILE_ATTRIBUTE_DIRECTORY; }
+    if (!enable_hidden) { this->state->file_attrs |= FILE_ATTRIBUTE_HIDDEN; }
+    if (!enable_system) { this->state->file_attrs |= FILE_ATTRIBUTE_SYSTEM; }
 
     if (this->state->find_data.dwFileAttributes & this->state->file_attrs) { this->fetch_next(); }
     else { this->cur_entry = dir_entry_from_find_data(this->state->find_data); }

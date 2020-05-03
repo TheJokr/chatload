@@ -137,18 +137,17 @@ private:
     wordexp_t we = {};
 
     void release() noexcept {
-        if ((this->flags & WRDE_REUSE) == 0) { return; }  // NOLINT(hicpp-signed-bitwise)
+        if ((this->flags & WRDE_REUSE) == 0) { return; }
 
         wordfree(&this->we);
-        this->flags &= ~WRDE_REUSE;  // NOLINT(hicpp-signed-bitwise)
+        this->flags &= ~WRDE_REUSE;
     }
 
 public:
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     explicit wordexp_helper(int flags = WRDE_NOCMD) noexcept : flags(flags & ~WRDE_REUSE) {}
     wordexp_helper(const wordexp_helper& other) = delete;
     wordexp_helper(wordexp_helper&& other) noexcept : flags(std::move(other.flags)), we(std::move(other.we)) {
-        other.flags &= ~WRDE_REUSE;  // NOLINT(hicpp-signed-bitwise)
+        other.flags &= ~WRDE_REUSE;
         other.we = {};
     }
 
@@ -158,7 +157,7 @@ public:
         this->flags = std::move(other.flags);
         this->we = std::move(other.we);
 
-        other.flags &= ~WRDE_REUSE;  // NOLINT(hicpp-signed-bitwise)
+        other.flags &= ~WRDE_REUSE;
         other.we = {};
         return *this;
     }
@@ -167,7 +166,7 @@ public:
 
     int wordexp(const char* words) noexcept {
         int res = ::wordexp(words, &this->we, static_cast<int>(this->flags));
-        this->flags |= WRDE_REUSE;  // NOLINT(hicpp-signed-bitwise)
+        this->flags |= WRDE_REUSE;
         return res;
     }
 
