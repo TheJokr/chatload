@@ -40,6 +40,7 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
 #include <boost/asio/ssl/rfc2818_verification.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
 
 // chatload components
 #include "constants.hpp"
@@ -66,8 +67,9 @@ auto buffer_single(T* ptr) noexcept {
 
 
 chatload::network::tcp_writer::tcp_writer(const chatload::cli::host& host, asio::io_context& io_ctx,
+                                          const boost::posix_time::time_duration& timeout,
                                           asio::ssl::context& ssl_ctx, asio::tcp::resolver& tcp_resolver) :
-        io_ctx(io_ctx), ssl_sock(io_ctx, ssl_ctx), host(host) {
+        io_ctx(io_ctx), timeout_timer(io_ctx), ssl_sock(io_ctx, ssl_ctx), host(host) {
     boost::system::error_code ec;
 
     if (this->host.insecure_tls) {
@@ -78,6 +80,10 @@ chatload::network::tcp_writer::tcp_writer(const chatload::cli::host& host, asio:
     this->ssl_sock.set_verify_callback(asio::ssl::rfc2818_verification(this->host.name), ec);
     if (ec) { this->net_err.emplace(ec, "set_verify_callback"); return; }
 
+    this->timeout_timer.expires_from_now(timeout, ec);
+    if (ec) { this->net_err.emplace(ec, "expires_from_now"); return; }
+    this->timeout_timer.async_wait(std::bind(&tcp_writer::timeout_hdlr, this, _1));
+
     tcp_resolver.async_resolve(this->host.name, this->host.port, asio::tcp::resolver::address_configured,
                                std::bind(&tcp_writer::resolve_hdlr, this, _1, _2));
 }
@@ -85,17 +91,27 @@ chatload::network::tcp_writer::tcp_writer(const chatload::cli::host& host, asio:
 void chatload::network::tcp_writer::resolve_hdlr(const boost::system::error_code& ec,
                                                  // NOLINTNEXTLINE(performance-unnecessary-value-param)
                                                  asio::tcp::resolver::results_type results) {
-    if (ec) { this->net_err.emplace(ec, "async_resolve"); return; }
+    if (ec) {
+        if (ec != asio::error::operation_aborted) { this->abort_err(ec, "async_resolve"); }
+        return;
+    }
     asio::async_connect(this->ssl_sock.next_layer(), results, std::bind(&tcp_writer::connect_hdlr, this, _1, _2));
 }
 
 void chatload::network::tcp_writer::connect_hdlr(const boost::system::error_code& ec, const asio::tcp::endpoint&) {
-    if (ec) { this->net_err.emplace(ec, "async_connect"); return; }
+    if (ec) {
+        if (ec != asio::error::operation_aborted) { this->abort_err(ec, "async_connect"); }
+        return;
+    }
 
     // Enable TCP_NODELAY for TLS handshake and version exchange
     boost::system::error_code tcp_ec;
     this->ssl_sock.next_layer().set_option(asio::tcp::no_delay(true), tcp_ec);
-    if (tcp_ec) { this->net_err.emplace(tcp_ec, "set_no_delay"); return; }
+    if (tcp_ec) {
+        this->net_err.emplace(tcp_ec, "set_no_delay");
+        this->ssl_shutdown_hdlr({});  // shut down stream (TLS not established)
+        return;
+    }
 
     this->ssl_sock.async_handshake(decltype(this->ssl_sock)::client,
                                    std::bind(&tcp_writer::ssl_handshake_hdlr, this, _1));
@@ -103,8 +119,10 @@ void chatload::network::tcp_writer::connect_hdlr(const boost::system::error_code
 
 void chatload::network::tcp_writer::ssl_handshake_hdlr(const boost::system::error_code& ec) {
     if (ec) {
-        this->net_err.emplace(ec, "async_handshake");
-        this->ssl_shutdown_hdlr({});  // shutdown stream (TLS not established)
+        if (ec != asio::error::operation_aborted) {
+            this->net_err.emplace(ec, "async_handshake");
+            this->ssl_shutdown_hdlr({});  // shut down stream (TLS not established)
+        }
         return;
     }
 
@@ -117,12 +135,18 @@ void chatload::network::tcp_writer::ssl_handshake_hdlr(const boost::system::erro
 void chatload::network::tcp_writer::version_exchange_hdlr(const boost::system::error_code& ec, std::size_t) {
     std::error_code app_ec;
 
-    if (ec) { app_ec = ec; }
-    else switch (this->server_buf) {  // NOLINT(readability-braces-around-statements,google-readability-braces-around-statements)
+    if (ec) {
+        if (ec == asio::error::operation_aborted) { return; }
+        app_ec = ec;
+    } else switch (this->server_buf) {  // NOLINT(readability-braces-around-statements,google-readability-braces-around-statements)
         case chatload::protocol::command::VERSION_OK: {
             // Disable TCP_NODELAY again after version exchange
             boost::system::error_code tcp_ec;
             this->ssl_sock.next_layer().set_option(asio::tcp::no_delay(false), tcp_ec);
+            if (tcp_ec) { app_ec = tcp_ec; break; }
+
+            // Abort wait operation on timeout_timer to stop io_context
+            this->timeout_timer.cancel(tcp_ec);
             if (tcp_ec) { app_ec = tcp_ec; break; }
 
             this->write_queued = false;
@@ -144,6 +168,9 @@ void chatload::network::tcp_writer::version_exchange_hdlr(const boost::system::e
 
 void chatload::network::tcp_writer::start_after_init() {
     if (this->net_err) { return; }
+
+    // Restart wait operation on timeout_timer
+    this->timeout_timer.async_wait(std::bind(&tcp_writer::timeout_hdlr, this, _1));
 
     // Restart server command read loop
     asio::async_read(this->ssl_sock, buffer_single(&this->server_buf),
@@ -199,25 +226,6 @@ void chatload::network::tcp_writer::write_hdlr(const boost::system::error_code& 
 }
 
 
-void chatload::network::tcp_writer::ssl_shutdown_hdlr(const boost::system::error_code& ec) {
-    // Don't return on errors, shutdown stream instead
-    // See https://stackoverflow.com/a/25703699. Both error codes are acceptable here.
-    if (ec && ec != asio::ssl::error::stream_truncated && ec != asio::error::eof && !this->net_err) {
-        this->net_err.emplace(ec, "async_shutdown");
-    };
-
-    // Close stream after TLS shutdown
-    boost::system::error_code ec_tcp;
-    auto& tcp_sock = this->ssl_sock.next_layer();
-
-    tcp_sock.shutdown(asio::tcp::socket::shutdown_both, ec_tcp);
-    if (ec_tcp && !this->net_err) { this->net_err.emplace(ec_tcp, "shutdown"); }
-
-    tcp_sock.close(ec_tcp);
-    if (ec_tcp && !this->net_err) { this->net_err.emplace(ec_tcp, "close"); }
-}
-
-
 void chatload::network::tcp_writer::shutdown_immediate() {
     boost::system::error_code ec;
     this->ssl_sock.next_layer().cancel(ec);  // prevent cancel from throwing
@@ -225,4 +233,52 @@ void chatload::network::tcp_writer::shutdown_immediate() {
     this->write_queued = true;
     this->shutdown_status = SHUTDOWN_IN_PROGRESS;
     this->ssl_sock.async_shutdown(std::bind(&tcp_writer::ssl_shutdown_hdlr, this, _1));
+}
+
+
+void chatload::network::tcp_writer::ssl_shutdown_hdlr(const boost::system::error_code& ec) {
+    if (ec) {
+        // Silently ignore aborts (e.g., because of timeout)
+        if (ec == asio::error::operation_aborted) { return; }
+
+        // Otherwise, only stream_truncated and eof errors are allowed.
+        // See https://stackoverflow.com/a/25703699.
+        if (ec != asio::ssl::error::stream_truncated && ec != asio::error::eof && !this->net_err) {
+            this->net_err.emplace(ec, "async_shutdown");
+        }
+
+        // Don't return, shut down stream instead
+    }
+
+    // Stop timeout_timer since remaining operations are synchronous
+    boost::system::error_code tcp_ec;
+    this->timeout_timer.cancel(tcp_ec);  // prevent cancel from throwing
+
+    // Close stream after TLS shutdown
+    auto& tcp_sock = this->ssl_sock.next_layer();
+
+    tcp_sock.shutdown(asio::tcp::socket::shutdown_both, tcp_ec);
+    if (tcp_ec && !this->net_err) { this->net_err.emplace(tcp_ec, "shutdown"); }
+
+    tcp_sock.close(tcp_ec);
+    if (tcp_ec && !this->net_err) { this->net_err.emplace(tcp_ec, "close"); }
+}
+
+
+void chatload::network::tcp_writer::timeout_hdlr(const boost::system::error_code& ec) {
+    if (ec) {
+        if (ec == asio::error::operation_aborted) { return; }
+
+        this->net_err.emplace(ec, "async_wait");
+        this->shutdown_immediate();
+        return;
+    }
+
+    boost::system::error_code tcp_ec;
+    this->ssl_sock.next_layer().cancel(tcp_ec);  // prevent cancel from throwing
+
+    this->write_queued = true;
+    this->shutdown_status = SHUTDOWN_IN_PROGRESS;
+    this->net_err.emplace(chatload::error::WRITER_TIMEOUT);
+    this->ssl_shutdown_hdlr({});
 }

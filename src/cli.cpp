@@ -34,11 +34,13 @@
 
 // Utility
 #include <utility>
+#include <type_traits>
 
 // Boost
 #include <boost/optional.hpp>
 #include <boost/utility/string_view.hpp>
 #include <boost/program_options.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
 
 // chatload components
 #include "common.hpp"
@@ -117,6 +119,8 @@ std::vector<chatload::cli::host> parseHosts(const po::variables_map& vm) {
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv[]) {
+    using timeout_t = std::remove_cv_t<decltype(clcfg::DEFAULT_TIMEOUT)>;
+
     // Options available both on the CLI and in the config
     boost::optional<std::string> ca_file, ca_path, cipher_list, ciphersuites;
     boost::optional<chatload::string> cache_file;
@@ -125,6 +129,7 @@ chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv
         ("verbose,v", po::bool_switch(), "list read logs")
         ("force,f", po::bool_switch(), "read all logs, even if they have been read before")
         ("insecure,k", po::bool_switch(), "allow TLS connections with invalid certificates")
+        ("timeout,t", po::value<timeout_t>()->default_value(clcfg::DEFAULT_TIMEOUT), "network timeout (in seconds)")
         ("cafile", po::value(&ca_file), "PEM file with trusted CA certificate(s)")
         ("capath", po::value(&ca_path), "directory with trusted PEM CA certificate(s)")
         ("ciphers", po::value(&cipher_list), "TLSv1.2 ciphers to use (OpenSSL format)")
@@ -198,6 +203,7 @@ chatload::cli::options chatload::cli::parseArgs(int argc, chatload::char_t* argv
     }
 
     return { vm["verbose"].as<bool>(), !vm["force"].as<bool>(), vm["insecure"].as<bool>(),
-             std::move(ca_file), std::move(ca_path), std::move(cipher_list), std::move(ciphersuites),
-             vm["regex"].as<chatload::string>(), std::move(cache_file), std::move(log_folder), parseHosts(vm) };
+             boost::posix_time::seconds(vm["timeout"].as<timeout_t>()), std::move(ca_file), std::move(ca_path),
+             std::move(cipher_list), std::move(ciphersuites), vm["regex"].as<chatload::string>(),
+             std::move(cache_file), std::move(log_folder), parseHosts(vm) };
 }

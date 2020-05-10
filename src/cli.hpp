@@ -30,6 +30,7 @@
 
 // Boost
 #include <boost/optional.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 
 // chatload components
 #include "common.hpp"
@@ -57,6 +58,10 @@ struct options {
     // Disable TLS certificate verification
     // May be overwritten for individual hosts
     bool insecure_tls = false;
+
+    // Hard timeout for entire network connection.
+    // After this time, the connection is shut down immediately.
+    boost::posix_time::time_duration network_timeout;
 
     // File/directory with OpenSSL's CAfile/CApath format to be passed to SSL_CTX_load_verify_locations
     boost::optional<std::string> ca_file, ca_path;

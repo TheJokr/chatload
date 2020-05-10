@@ -55,6 +55,7 @@ enum class command : std::uint32_t {
 // Network defaults
 constexpr char DEFAULT_HOST[] = "chatload.bloecher.dev";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
 constexpr char DEFAULT_PORT[] = "36643";  // NOLINT(modernize-avoid-c-arrays,cppcoreguidelines-avoid-c-arrays)
+constexpr std::uint_least32_t DEFAULT_TIMEOUT = 300;
 
 // OpenSSL defaults
 constexpr int OPENSSL_MIN_PROTO_VERSION = TLS1_2_VERSION;

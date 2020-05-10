@@ -41,11 +41,13 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
 
 // OpenSSL
 #include <openssl/err.h>
@@ -61,6 +63,7 @@ namespace network {
 class tcp_writer {
 private:
     boost::asio::io_context& io_ctx;
+    boost::asio::deadline_timer timeout_timer;
     boost::beast::ssl_stream<boost::asio::ip::tcp::socket> ssl_sock;
 
     const chatload::cli::host& host;
@@ -78,7 +81,8 @@ private:
 
 public:
     explicit tcp_writer(const chatload::cli::host& host, boost::asio::io_context& io_ctx,
-                        boost::asio::ssl::context& ssl_ctx, boost::asio::ip::tcp::resolver& tcp_resolver);
+                        const boost::posix_time::time_duration& timeout, boost::asio::ssl::context& ssl_ctx,
+                        boost::asio::ip::tcp::resolver& tcp_resolver);
 
     const auto& get_host() const noexcept { return this->host; }
     bool has_error() const noexcept { return this->net_err.has_value(); }
@@ -112,6 +116,13 @@ public:
     }
 
 private:
+    template<typename... Args>
+    void abort_err(Args&&... args) {
+        boost::system::error_code ec;
+        this->timeout_timer.cancel(ec);  // prevent cancel from throwing
+        this->net_err.emplace(std::forward<Args>(args)...);
+    }
+
     void resolve_hdlr(const boost::system::error_code& ec, boost::asio::ip::tcp::resolver::results_type results);
     void connect_hdlr(const boost::system::error_code& ec, const boost::asio::ip::tcp::endpoint&);
     void ssl_handshake_hdlr(const boost::system::error_code& ec);
@@ -119,6 +130,7 @@ private:
     void read_hdlr(const boost::system::error_code& ec, std::size_t);
     void write_hdlr(const boost::system::error_code& ec, std::size_t);
     void ssl_shutdown_hdlr(const boost::system::error_code& ec);
+    void timeout_hdlr(const boost::system::error_code& ec);
 
     void shutdown_immediate();
 };
@@ -162,7 +174,7 @@ struct clients_context {
 
         this->writers.reserve(args.hosts.size());
         for (const auto& host : args.hosts) {
-            this->writers.emplace_back(host, this->io_ctx, this->ssl_ctx, this->tcp_resolver);
+            this->writers.emplace_back(host, this->io_ctx, args.network_timeout, this->ssl_ctx, this->tcp_resolver);
         }
     }
 
